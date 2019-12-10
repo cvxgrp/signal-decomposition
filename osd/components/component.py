@@ -14,3 +14,13 @@ class Component(ABC):
     @abstractmethod
     def is_convex(self):
         return NotImplemented
+
+    @property
+    @abstractmethod
+    def cost(self):
+        return NotImplemented
+
+    @property
+    @abstractmethod
+    def constraints(self):
+        return NotImplemented
