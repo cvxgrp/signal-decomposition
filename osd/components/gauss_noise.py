@@ -12,16 +12,12 @@ from osd.components.component import Component
 class GaussNoise(Component):
 
     def __init__(self):
+        super().__init__()
         return
 
     @property
     def is_convex(self):
         return True
 
-    @property
-    def cost(self):
+    def _get_cost(self):
         return cvx.sum_squares
-
-    @property
-    def constraints(self):
-        return []
