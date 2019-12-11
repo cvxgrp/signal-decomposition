@@ -14,7 +14,7 @@ from osd.utilities import compose
 
 class SmoothFirstDifference(Component):
 
-    def __init__(self, gamma=1e3):
+    def __init__(self, gamma=1e1):
         super().__init__(gamma)
         return
 
