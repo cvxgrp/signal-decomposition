@@ -24,4 +24,4 @@ class GaussNoise(Component):
 
     @property
     def constraints(self):
-        return None
+        return []
