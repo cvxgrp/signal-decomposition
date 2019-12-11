@@ -28,10 +28,10 @@ class Problem():
             raise NotImplemented
 
     def optimize_parameters(self):
-        pass
+        raise NotImplementedError
 
     def holdout_validation(self):
-        pass
+        raise NotImplementedError
 
     def __construct_cvx_problem(self):
         y = self.data
