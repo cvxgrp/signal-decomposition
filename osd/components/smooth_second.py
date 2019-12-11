@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-''' Gaussian Noise Component
+''' Smooth Component (2)
 
 This module contains the class for a smooth signal that is penalized for large
 second-order differences
