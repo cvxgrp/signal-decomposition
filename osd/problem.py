@@ -19,11 +19,14 @@ class Problem():
         self.components = [c() if type(c) is abc.ABCMeta else c
                            for c in components]
         self.num_components = len(components)
-        self.parameters = {i: c.parameters for i, c in enumerate(self.components)}
+        self.parameters = {i: c.parameters for i, c in enumerate(self.components)
+                           if c.parameters is not None}
         self.num_parameters = np.sum([len(value) if value is not None else 0
                                       for key, value in self.parameters.items()])
         self.estimates = None
         self.problem = None
+        K = self.num_components
+        self.weights = cvx.Parameter(shape=K, nonneg=True, value=[1]*K)
         self.residual_term = residual_term
 
     def demix(self, solver='ECOS', use_set=None, reset=False):
@@ -39,25 +42,31 @@ class Problem():
         else:
             raise NotImplemented
 
-    def optimize_parameters(self, search_dict=None, solver='ECOS', seed=None):
+    def optimize_weights(self, search_dict=None, solver='ECOS', seed=None):
         if seed is None:
             seed = np.random.random_integers(0, 1000)
-        if self.num_parameters == 1:
-            for key, value in self.parameters.items():
-                if value is None:
-                    continue
-                else:
-                    comp_ix = key
-                    param = value[0]
+        if self.num_components == 2:
+            # for key, value in self.parameters.items():
+            #     if value is None:
+            #         continue
+            #     else:
+            #         comp_ix = key
+            #         param = value[0]
+            search_ix = 1 - self.residual_term
             _ = self.holdout_validation(solver=solver, seed=seed)
+            new_vals = np.ones(2)
             def cost_meta(v):
                 val = 10 ** v
-                self.components[comp_ix].set_parameters(val)
+                # self.components[comp_ix].set_parameters(val)
+                new_vals[search_ix] = val
+                self.weights.value = new_vals
                 cost = self.holdout_validation(solver=solver, seed=seed, reuse=True)
                 return cost
             res = minimize_scalar(cost_meta)
             best_val = 10 ** res.x
-            self.components[comp_ix].set_parameters(best_val)
+            # self.components[comp_ix].set_parameters(best_val)
+            new_vals[search_ix] = best_val
+            self.weights.value = new_vals
             self.demix(solver=solver, reset=True)
             return
         else:
@@ -89,8 +98,10 @@ class Problem():
         y = self.data
         T = len(y)
         K = self.num_components
+        weights = self.weights
         xs = [cvx.Variable(T) for _ in range(K)]
         costs = [c.cost(x) for c, x in zip(self.components, xs)]
+        costs = [weights[i] * cost for i, cost in enumerate(costs)]
         constraints = [c.constraints for c in self.components]
         constraints = list(chain.from_iterable(constraints))
         constraints.append(cvx.sum([x[use_set] for x in xs], axis=0) == y[use_set])

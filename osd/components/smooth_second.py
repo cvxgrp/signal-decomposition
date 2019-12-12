@@ -24,11 +24,11 @@ class SmoothSecondDifference(Component):
 
     def _get_cost(self):
         diff2 = partial(cvx.diff, k=2)
-        gamma = self.parameters[0]
-        multiplier = lambda x: gamma * x
-        cost = compose(multiplier, cvx.sum_squares, diff2)
+        # gamma = self.parameters[0]
+        # multiplier = lambda x: gamma * x
+        cost = compose(cvx.sum_squares, diff2)
         return cost
-
-    def _get_params(self):
-        gamma = cvx.Parameter(nonneg=True)
-        return [gamma]
+    #
+    # def _get_params(self):
+    #     gamma = cvx.Parameter(nonneg=True)
+    #     return [gamma]
