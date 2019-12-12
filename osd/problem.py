@@ -21,8 +21,10 @@ class Problem():
         self.num_components = len(components)
         self.parameters = {i: c.parameters for i, c in enumerate(self.components)
                            if c.parameters is not None}
-        self.num_parameters = np.sum([len(value) if value is not None else 0
-                                      for key, value in self.parameters.items()])
+        self.num_parameters = int(
+            np.sum([len(value) if value is not None else 0
+                    for key, value in self.parameters.items()])
+        )
         self.estimates = None
         self.problem = None
         K = self.num_components
@@ -46,25 +48,17 @@ class Problem():
         if seed is None:
             seed = np.random.random_integers(0, 1000)
         if self.num_components == 2:
-            # for key, value in self.parameters.items():
-            #     if value is None:
-            #         continue
-            #     else:
-            #         comp_ix = key
-            #         param = value[0]
             search_ix = 1 - self.residual_term
             _ = self.holdout_validation(solver=solver, seed=seed)
             new_vals = np.ones(2)
             def cost_meta(v):
                 val = 10 ** v
-                # self.components[comp_ix].set_parameters(val)
                 new_vals[search_ix] = val
                 self.weights.value = new_vals
                 cost = self.holdout_validation(solver=solver, seed=seed, reuse=True)
                 return cost
             res = minimize_scalar(cost_meta)
             best_val = 10 ** res.x
-            # self.components[comp_ix].set_parameters(best_val)
             new_vals[search_ix] = best_val
             self.weights.value = new_vals
             self.demix(solver=solver, reset=True)
