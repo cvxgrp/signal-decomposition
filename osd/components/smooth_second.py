@@ -14,8 +14,8 @@ from osd.utilities import compose
 
 class SmoothSecondDifference(Component):
 
-    def __init__(self, gamma=1e3):
-        super().__init__(gamma)
+    def __init__(self):
+        super().__init__()
         return
 
     @property
@@ -24,11 +24,5 @@ class SmoothSecondDifference(Component):
 
     def _get_cost(self):
         diff2 = partial(cvx.diff, k=2)
-        # gamma = self.parameters[0]
-        # multiplier = lambda x: gamma * x
         cost = compose(cvx.sum_squares, diff2)
         return cost
-    #
-    # def _get_params(self):
-    #     gamma = cvx.Parameter(nonneg=True)
-    #     return [gamma]
