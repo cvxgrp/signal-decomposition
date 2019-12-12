@@ -23,10 +23,10 @@ class SmoothFirstDifference(Component):
         return True
 
     def _get_cost(self):
-        diff2 = partial(cvx.diff, k=1)
+        diff1 = partial(cvx.diff, k=1)
         gamma = self.parameters[0]
         multiplier = lambda x: gamma * x
-        cost = compose(multiplier, cvx.sum_squares, diff2)
+        cost = compose(multiplier, cvx.sum_squares, diff1)
         return cost
 
     def _get_params(self):
