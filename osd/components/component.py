@@ -49,7 +49,9 @@ class Component(ABC):
         return None
 
     def set_parameters(self, *values, ix=None):
-        if self.__parameters is not None and ix is None:
+        if values[0] is None:
+            self.__parameters = None
+        elif self.__parameters is not None and ix is None:
             for p, v in zip(self.__parameters, values):
                 p.value = v
         elif self.__parameters is not None and ix is not None:
