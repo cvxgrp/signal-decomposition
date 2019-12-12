@@ -1,7 +1,14 @@
 # -*- coding: utf-8 -*-
-''' Gaussian Noise Component
+''' Laplace Noise Component
 
-This module contains the class for Gaussian Noise
+This module contains the class for Laplace noise, or a noise term modeled
+as a random variable drawn from a Laplace distribution. The Laplace distribution
+has a tighter peak and fatter tails than a Gaussian distribution, and so is a
+good model for a signal that is often zero and sometime quite large. For this
+reason, it is often used as a heuristic for sparsity.
+
+The cost function for Laplace noise is simply the sum of the absolute values,
+or the L1 norm.
 
 Author: Bennet Meyers
 '''
