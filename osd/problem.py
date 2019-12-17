@@ -12,6 +12,7 @@ import cvxpy as cvx
 from itertools import chain
 import abc
 from scipy.optimize import minimize_scalar
+from osd.utilities import compose
 
 class Problem():
     def __init__(self, data, components, residual_term=0):
@@ -44,7 +45,7 @@ class Problem():
         else:
             raise NotImplemented
 
-    def optimize_weights(self, search_dict=None, solver='ECOS', seed=None):
+    def optimize_weights(self, solver='ECOS', seed=None):
         if seed is None:
             seed = np.random.random_integers(0, 1000)
         if self.num_components == 2:
@@ -55,7 +56,8 @@ class Problem():
                 val = 10 ** v
                 new_vals[search_ix] = val
                 self.weights.value = new_vals
-                cost = self.holdout_validation(solver=solver, seed=seed, reuse=True)
+                cost = self.holdout_validation(solver=solver, seed=seed,
+                                               reuse=True)
                 return cost
             res = minimize_scalar(cost_meta)
             best_val = 10 ** res.x
@@ -66,9 +68,28 @@ class Problem():
         else:
             print('IN PROGRESS')
 
+    def optimize_parameters(self, solver='ECOS', seed=None):
+        if seed is None:
+            seed = np.random.random_integers(0, 1000)
+        if self.num_parameters == 1:
+            k1, k2 = [(k1, k2) for k1, value in self.parameters.items()
+                      for k2 in value.keys()][0]
+            _ = self.holdout_validation(solver=solver, seed=seed)
+            def cost_meta(val):
+                self.parameters[k1][k2].value = val
+                cost = self.holdout_validation(solver=solver, seed=seed,
+                                               reuse=True)
+                return cost
+            res = minimize_scalar(cost_meta, bounds=(0, 1), method='bounded')
+            best_val = res.x
+            self.parameters[k1][k2].value = best_val
+            self.demix(solver=solver, reset=True)
+            return
+        else:
+            print('IN PROGRESS')
 
     def holdout_validation(self, holdout=0.2, seed=None, solver='ECOS',
-                               reuse=False):
+                               reuse=False, cost=None):
         T = len(self.data)
         if seed is not None:
             np.random.seed(seed)
@@ -82,7 +103,12 @@ class Problem():
         hold_est = np.sum(est_array[:, hold_set], axis=0)
         hold_y = self.data[hold_set]
         residuals = hold_y - hold_est
-        resid_cost =self.components[self.residual_term].cost
+        if cost is None:
+            resid_cost = self.components[self.residual_term].cost
+        elif cost == 'l1':
+            resid_cost = compose(cvx.sum, cvx.abs)
+        elif cost == 'l2':
+            resid_cost = cvx.sum_squares
         holdout_cost = resid_cost(residuals).value
         return holdout_cost.item()
 
