@@ -52,6 +52,7 @@ class Problem():
             search_ix = 1 - self.residual_term
             _ = self.holdout_validation(solver=solver, seed=seed)
             new_vals = np.ones(2)
+
             def cost_meta(v):
                 val = 10 ** v
                 new_vals[search_ix] = val
@@ -59,7 +60,7 @@ class Problem():
                 cost = self.holdout_validation(solver=solver, seed=seed,
                                                reuse=True)
                 return cost
-            res = minimize_scalar(cost_meta)
+            res = minimize_scalar(cost_meta, bounds=(-2, 10), method='bounded')
             best_val = 10 ** res.x
             new_vals[search_ix] = best_val
             self.weights.value = new_vals
