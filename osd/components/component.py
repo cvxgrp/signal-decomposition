@@ -8,10 +8,17 @@ Author: Bennet Meyers
 
 from abc import ABC, abstractmethod
 
+
 class Component(ABC):
     def __init__(self, **kwargs):
         self.__parameters = self._get_params()
         self.__cost = self._get_cost()
+        for key in ['vmin', 'vmax', 'vavg']:
+            if key in kwargs.keys():
+                setattr(self, key, kwargs[key])
+                del kwargs[key]
+            else:
+                setattr(self, key, None)
         self.set_parameters(**kwargs)
         return
 

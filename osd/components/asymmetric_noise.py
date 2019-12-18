@@ -27,8 +27,8 @@ from osd.utilities import compose
 
 class AsymmetricNoise(Component):
 
-    def __init__(self, tau=0.85):
-        super().__init__(tau=tau)
+    def __init__(self, tau=0.85, **kwargs):
+        super().__init__(tau=tau, **kwargs)
         return
 
     @property

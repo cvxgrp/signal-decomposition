@@ -11,8 +11,8 @@ from osd.components.component import Component
 
 class GaussNoise(Component):
 
-    def __init__(self):
-        super().__init__()
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
         return
 
     @property
