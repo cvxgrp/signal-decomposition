@@ -123,7 +123,7 @@ class Problem():
         xs = [cvx.Variable(T) for _ in range(K)]
         costs = [c.cost(x) for c, x in zip(self.components, xs)]
         costs = [weights[i] * cost for i, cost in enumerate(costs)]
-        constraints = [c.constraints for c in self.components]
+        constraints = [c.make_constraints(x) for c, x in zip(self.components, xs)]
         constraints = list(chain.from_iterable(constraints))
         constraints.append(cvx.sum([x[use_set] for x in xs], axis=0) == y[use_set])
         objective = cvx.Minimize(cvx.sum(costs))

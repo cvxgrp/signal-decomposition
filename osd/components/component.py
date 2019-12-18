@@ -7,6 +7,7 @@ Author: Bennet Meyers
 '''
 
 from abc import ABC, abstractmethod
+import cvxpy as cvx
 
 
 class Component(ABC):
@@ -15,10 +16,10 @@ class Component(ABC):
         self.__cost = self._get_cost()
         for key in ['vmin', 'vmax', 'vavg']:
             if key in kwargs.keys():
-                setattr(self, key, kwargs[key])
+                setattr(self, '_' + key, kwargs[key])
                 del kwargs[key]
             else:
-                setattr(self, key, None)
+                setattr(self, '_' + key, None)
         self.set_parameters(**kwargs)
         return
 
@@ -45,8 +46,27 @@ class Component(ABC):
         return NotImplementedError
 
     @property
-    def constraints(self):
-        return []
+    def vmin(self):
+        return self._vmin
+
+    @property
+    def vmax(self):
+        return self._vmax
+
+    @property
+    def vavg(self):
+        return self._vavg
+
+    def make_constraints(self, x):
+        c = []
+        if self.vmin is not None:
+            c.append(x >= self.vmin)
+        if self.vmax is not None:
+            c.append(x <= self.vmax)
+        if self.vavg is not None:
+            n = x.size
+            c.append(cvx.sum(x) / n == self.vavg)
+        return c
 
     @property
     def parameters(self):
