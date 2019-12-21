@@ -14,7 +14,7 @@ class Component(ABC):
     def __init__(self, **kwargs):
         self.__parameters = self._get_params()
         self.__cost = self._get_cost()
-        for key in ['vmin', 'vmax', 'vavg']:
+        for key in ['vmin', 'vmax', 'vavg', 'period']:
             if key in kwargs.keys():
                 setattr(self, '_' + key, kwargs[key])
                 del kwargs[key]
@@ -57,6 +57,10 @@ class Component(ABC):
     def vavg(self):
         return self._vavg
 
+    @property
+    def period(self):
+        return self._period
+
     def make_constraints(self, x):
         c = []
         if self.vmin is not None:
@@ -66,6 +70,8 @@ class Component(ABC):
         if self.vavg is not None:
             n = x.size
             c.append(cvx.sum(x) / n == self.vavg)
+        if self.period is not None:
+            pass
         return c
 
     @property
