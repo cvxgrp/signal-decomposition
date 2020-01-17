@@ -71,7 +71,8 @@ class Component(ABC):
             n = x.size
             c.append(cvx.sum(x) / n == self.vavg)
         if self.period is not None:
-            pass
+            p = self.period
+            c.append(x[:-p] == x[p:])
         return c
 
     @property
