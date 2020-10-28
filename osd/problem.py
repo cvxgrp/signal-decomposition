@@ -32,7 +32,7 @@ class Problem():
         self.weights = cvx.Parameter(shape=K, nonneg=True, value=[1]*K)
         self.residual_term = residual_term
 
-    def demix(self, solver='ECOS', use_set=None, reset=False):
+    def decompose(self, solver='ECOS', use_set=None, reset=False):
         if np.alltrue([c.is_convex for c in self.components]):
             if self.problem is None or reset:
                 problem = self.__construct_cvx_problem(use_set=use_set)
@@ -84,7 +84,7 @@ class Problem():
             res = minimize_scalar(cost_meta, bounds=(0, 1), method='bounded')
             best_val = res.x
             self.parameters[k1][k2].value = best_val
-            self.demix(solver=solver, reset=True)
+            self.decompose(solver=solver, reset=True)
             return
         else:
             print('IN PROGRESS')
@@ -97,9 +97,9 @@ class Problem():
         hold_set = np.random.uniform(0, 1, T) <= holdout
         use_set = ~hold_set
         if not reuse:
-            self.demix(solver=solver, use_set=use_set, reset=True)
+            self.decompose(solver=solver, use_set=use_set, reset=True)
         else:
-            self.demix(solver=solver, reset=False)
+            self.decompose(solver=solver, reset=False)
         est_array = np.array(self.estimates)
         hold_est = np.sum(est_array[:, hold_set], axis=0)
         hold_y = self.data[hold_set]
