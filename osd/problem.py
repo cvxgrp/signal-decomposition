@@ -32,14 +32,14 @@ class Problem():
         self.weights = cvx.Parameter(shape=K, nonneg=True, value=[1]*K)
         self.residual_term = residual_term
 
-    def decompose(self, solver='ECOS', use_set=None, reset=False):
+    def decompose(self, use_set=None, reset=False, **kwargs):
         if np.alltrue([c.is_convex for c in self.components]):
             if self.problem is None or reset:
                 problem = self.__construct_cvx_problem(use_set=use_set)
                 self.problem = problem
             else:
                 problem = self.problem
-            problem.solve(solver=solver)
+            problem.solve(**kwargs)
             ests = [x.value for x in problem.variables()]
             self.estimates = ests
         else:

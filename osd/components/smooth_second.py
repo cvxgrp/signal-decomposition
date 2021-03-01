@@ -23,6 +23,8 @@ class SmoothSecondDifference(Component):
         return True
 
     def _get_cost(self):
+        internal_scaling = 1 #10 ** (3.5 / 2)
         diff2 = partial(cvx.diff, k=2)
-        cost = compose(cvx.sum_squares, diff2)
+        cost = compose(lambda x: internal_scaling * x, diff2)
+        cost = compose(cvx.sum_squares, cost)
         return cost
