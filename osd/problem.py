@@ -12,6 +12,7 @@ import cvxpy as cvx
 from itertools import chain
 import abc
 from scipy.optimize import minimize_scalar
+from osd.signal_decomp_admm import run_admm
 from osd.utilities import compose
 
 class Problem():
@@ -28,22 +29,31 @@ class Problem():
         )
         self.estimates = None
         self.problem = None
+        self.admm_result = None
         K = self.num_components
+        # TODO: refactor this so that weights used for CVX solve are the same
+        #  as the thetas associated with each class
         self.weights = cvx.Parameter(shape=K, nonneg=True, value=[1]*K)
         self.residual_term = residual_term
 
-    def decompose(self, use_set=None, reset=False, admm=False, **kwargs):
+    def decompose(self, use_set=None, reset=False, admm=False,
+                  num_iter=50, rho=0.5, verbose=True,
+                  randomize_start=False, **cvx_kwargs):
         if np.alltrue([c.is_convex for c in self.components]) and not admm:
             if self.problem is None or reset:
                 problem = self.__construct_cvx_problem(use_set=use_set)
                 self.problem = problem
             else:
                 problem = self.problem
-            problem.solve(**kwargs)
+            problem.solve(**cvx_kwargs)
             ests = [x.value for x in problem.variables()]
             self.estimates = ests
         else:
-            raise NotImplemented
+            result = run_admm(
+                self.data, self.components, num_iter=num_iter, rho=rho,
+                use_ix=use_set, verbose=verbose, randomize_start=randomize_start
+            )
+            self.admm_result = result
 
     def optimize_weights(self, solver='ECOS', seed=None):
         if seed is None:
