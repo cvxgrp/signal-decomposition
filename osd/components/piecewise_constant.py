@@ -31,6 +31,14 @@ class PiecewiseConstant(Component):
 
 
 def error(x):
+    """
+    Calculate the "error matrix" for the piecewise constant partition problem.
+    This is simply a matrix whose entries (i, j) contains the scaled variance
+    of the signal segment x[i:j] for i < j.
+
+    :param x: 1D numpy array containing signal to be partitioned
+    :return:  2D numpy array containing error matrix
+    """
     T = len(x)
     d = sparse.lil_matrix((T, T), dtype=np.float32)
     for a in range(T):
@@ -43,9 +51,14 @@ def error(x):
 
 def dp_seg(x, d, c):
     """
-    :x: time series x_1, ... , x_T
-    :d: Precalculated segment errors
-    :c: The number of segments, typically c >= 2
+    Dynamic programming algorithm for optimal partitioning of a signal into
+    piecewise constant segments, based on finding the partition with the
+    minimal residual variance.
+
+    :param x: time series x_1, ... , x_T
+    :param d: precalculated segment errors
+    :param c: the number of segments, typically c >= 2
+    :return:
     """
     T = len(x)
     # Cost table
