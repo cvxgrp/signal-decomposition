@@ -32,8 +32,8 @@ class Problem():
         self.weights = cvx.Parameter(shape=K, nonneg=True, value=[1]*K)
         self.residual_term = residual_term
 
-    def decompose(self, use_set=None, reset=False, **kwargs):
-        if np.alltrue([c.is_convex for c in self.components]):
+    def decompose(self, use_set=None, reset=False, admm=False, **kwargs):
+        if np.alltrue([c.is_convex for c in self.components]) and not admm:
             if self.problem is None or reset:
                 problem = self.__construct_cvx_problem(use_set=use_set)
                 self.problem = problem

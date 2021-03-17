@@ -1,7 +1,7 @@
-''' Smooth Component (2)
+''' Piecewise Constant Signal
 
 This module contains the class for piecewise constant signal with a known
-number of jumps
+number of jumps.
 
 Author: Bennet Meyers
 '''
