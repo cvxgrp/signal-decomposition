@@ -14,10 +14,12 @@ class Component(ABC):
     def __init__(self, **kwargs):
         self.__parameters = self._get_params()
         self.__cost = self._get_cost()
-        for key in ['vmin', 'vmax', 'vavg', 'period']:
+        for key in ['vmin', 'vmax', 'vavg', 'period', 'first_val', 'theta']:
             if key in kwargs.keys():
                 setattr(self, '_' + key, kwargs[key])
                 del kwargs[key]
+            elif key == 'theta':
+                setattr(self, '_' + key, 1)
             else:
                 setattr(self, '_' + key, None)
         self.set_parameters(**kwargs)
@@ -44,6 +46,10 @@ class Component(ABC):
     @abstractmethod
     def _get_cost(self):
         return NotImplementedError
+    #
+    # @abstractmethod
+    # def prox_op(self):
+    #     return NotImplementedError
 
     @property
     def vmin(self):
@@ -61,6 +67,14 @@ class Component(ABC):
     def period(self):
         return self._period
 
+    @property
+    def first_val(self):
+        return  self._first_val
+
+    @property
+    def theta(self):
+        return self._theta
+
     def make_constraints(self, x):
         c = []
         if self.vmin is not None:
@@ -73,6 +87,8 @@ class Component(ABC):
         if self.period is not None:
             p = self.period
             c.append(x[:-p] == x[p:])
+        if self.first_val is not None:
+            c.append(x[0] == self.first_val)
         return c
 
     @property

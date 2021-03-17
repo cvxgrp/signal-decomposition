@@ -114,9 +114,10 @@ def run_admm(data, num_iter=50, rho=0.5, theta=1e4, verbose=True, switch_at=25, 
     x1 = np.zeros_like(y)
     x2 = np.zeros_like(y)
     x3 = np.zeros_like(y)
-    x1[use_ix] = y[use_ix] / 3
-    x2[use_ix] = y[use_ix] / 3
-    x3[use_ix] = y[use_ix] / 3
+#     x1[use_ix] = y[use_ix] / 3
+#     x2[use_ix] = y[use_ix] / 3
+#     x3[use_ix] = y[use_ix] / 3
+    x1[use_ix] = y[use_ix]
 #     x2 = problem.estimates[1]
 #     x3 = problem.estimates[2]
 #     x1 = y - x2 - x3

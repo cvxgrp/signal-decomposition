@@ -7,6 +7,8 @@ second-order differences
 Author: Bennet Meyers
 '''
 
+import scipy.linalg as spl
+import numpy as np
 import cvxpy as cvx
 from functools import partial
 from osd.components.component import Component
@@ -16,6 +18,7 @@ class SmoothSecondDifference(Component):
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
+        self._c = None
         return
 
     @property
@@ -28,3 +31,17 @@ class SmoothSecondDifference(Component):
         cost = compose(lambda x: internal_scaling * x, diff2)
         cost = compose(cvx.sum_squares, cost)
         return cost
+
+    def prox_op(self, v, theta, rho):
+        c = self._c
+        if c is None:
+            n = len(v)
+            M = np.diff(np.eye(n), axis=0, n=2)
+            r = 2 * theta / rho
+            ab = np.zeros((3, n))
+            A = np.eye(n) + r * M.T.dot(M)
+            for i in range(3):
+                ab[i] = np.pad(np.diag(A, k=i), (0, i))
+            c = spl.cholesky_banded(ab, lower=True)
+            self._c = c
+        return spl.cho_solve_banded((c, True), v)
