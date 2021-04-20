@@ -50,7 +50,7 @@ def calc_obj(y, X, components, use_ix):
     return obj_val
 
 def run_admm(data, components, num_iter=50, rho=1., use_ix=None, verbose=True,
-             randomize_start=False):
+             randomize_start=False, X_init=None):
     """
     Serial implementation of SD ADMM algorithm.
 
@@ -69,12 +69,19 @@ def run_admm(data, components, num_iter=50, rho=1., use_ix=None, verbose=True,
     if use_ix is None:
         use_ix = np.ones_like(data, dtype=bool)
     u = np.zeros_like(y)
-    X = np.zeros((K, T))
-    if not randomize_start:
-        X[0, use_ix] = y[use_ix]
+    if X_init is None:
+        X = np.zeros((K, T))
+        if not randomize_start:
+            X[0, use_ix] = y[use_ix]
+        else:
+            X[1:, :] = np.random.randn(K-1, T)
+            X[0, use_ix] = y[use_ix] - np.sum(X[1:, use_ix], axis=0)
+    elif X_init.shape == (K, T):
+        X = np.copy(X_init)
     else:
-        X[1:, :] = np.random.randn(K-1, T)
-        X[0, use_ix] = y[use_ix] - np.sum(X[1:, use_ix], axis=0)
+        m1 = 'A initial value was given for X that does not match the problem shape.'
+        print(m1)
+        return
     residuals = []
     obj_vals = []
     ti = time()

@@ -1,7 +1,14 @@
 ''' Piecewise Constant Signal
 
-This module contains the class for piecewise constant signal with a known
-number of jumps.
+This module contains the class for a piecewise constant signal with a known
+number of jumps. This class implements a dynamic programming algorithm for
+optimal segmentation of a scalar signal into a given number of separate linear
+models. See this paper for more details:
+
+A. Kehagias, E. Nidelkou, and V. Petridis
+"A dynamic programming segmentation procedure for hydrological and
+environmental time series"
+https://link.springer.com/article/10.1007/s00477-005-0013-6
 
 Author: Bennet Meyers
 '''

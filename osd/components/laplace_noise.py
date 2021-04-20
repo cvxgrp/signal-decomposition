@@ -16,6 +16,7 @@ Author: Bennet Meyers
 import cvxpy as cvx
 from osd.components.component import Component
 from osd.utilities import compose
+import numpy as np
 
 class LaplaceNoise(Component):
 
@@ -30,3 +31,10 @@ class LaplaceNoise(Component):
     def _get_cost(self):
         cost = compose(cvx.sum, cvx.abs)
         return cost
+
+    def prox_op(self, v, theta, rho):
+        kappa = theta / rho
+        t1 = v - kappa
+        t2 = -v - kappa
+        x = np.clip(t1, 0, np.inf) - np.clip(t2, 0, np.inf)
+        return x

@@ -38,22 +38,32 @@ class Problem():
 
     def decompose(self, use_set=None, reset=False, admm=False,
                   num_iter=50, rho=0.5, verbose=True,
-                  randomize_start=False, **cvx_kwargs):
+                  randomize_start=False, X_init=None, **cvx_kwargs):
         if np.alltrue([c.is_convex for c in self.components]) and not admm:
             if self.problem is None or reset:
                 problem = self.__construct_cvx_problem(use_set=use_set)
                 self.problem = problem
             else:
                 problem = self.problem
+            if X_init is not None:
+                cvx_kwargs['warm_start'] = True
+                for ix, x in enumerate(problem.variables()):
+                    x.value = X_init[ix, :]
             problem.solve(**cvx_kwargs)
-            ests = [x.value for x in problem.variables()]
+            ests = np.array([x.value for x in problem.variables()])
             self.estimates = ests
-        else:
+        elif admm:
             result = run_admm(
                 self.data, self.components, num_iter=num_iter, rho=rho,
-                use_ix=use_set, verbose=verbose, randomize_start=randomize_start
+                use_ix=use_set, verbose=verbose,
+                randomize_start=randomize_start, X_init=X_init
             )
             self.admm_result = result
+            self.estimates = result['X']
+        else:
+            m1 = 'This problem is non-convex and not solvable with CVXPY. '
+            m2 = 'Please try solving with ADMM.'
+            print(m1 + m2)
 
     def optimize_weights(self, solver='ECOS', seed=None):
         if seed is None:
