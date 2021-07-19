@@ -19,6 +19,8 @@ class SmoothFirstDifference(Component):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self._c = None
+        self._last_theta = None
+        self._last_rho = None
         return
 
     @property
@@ -32,7 +34,10 @@ class SmoothFirstDifference(Component):
 
     def prox_op(self, v, theta, rho):
         c = self._c
-        if c is None:
+        cond1 = c is None
+        cond2 = self._last_theta != theta
+        cond3 = self._last_rho != rho
+        if cond1 or cond2 or cond3:
             n = len(v)
             M = np.diff(np.eye(n), axis=0, n=1)
             r = 2 * theta / rho

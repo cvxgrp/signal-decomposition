@@ -24,7 +24,7 @@ def make_estimate(y, X, use_ix):
     :return: the estimate with the first component replaced by the residuals
     """
     X_tilde = np.copy(X)
-    X_tilde[0, use_ix] = y - np.sum(X[1:, use_ix], axis=0)
+    X_tilde[0, use_ix] = y[use_ix] - np.sum(X[1:, use_ix], axis=0)
     X_tilde[0, ~use_ix] = 0
     return X_tilde
 
@@ -50,7 +50,7 @@ def calc_obj(y, X, components, use_ix):
     return obj_val
 
 def run_admm(data, components, num_iter=50, rho=1., use_ix=None, verbose=True,
-             randomize_start=False, X_init=None):
+             randomize_start=False, X_init=None, stop_early=False):
     """
     Serial implementation of SD ADMM algorithm.
 
@@ -101,14 +101,14 @@ def run_admm(data, components, num_iter=50, rho=1., use_ix=None, verbose=True,
             theta = components[k].theta
             X[k, :] = prox(X[k, :] - u, theta, rho)
         # Consensus step
-        u[use_ix] += 2 * (np.average(X[:, use_ix], axis=0) - y[use_ix] / 3)
+        u[use_ix] += 2 * (np.average(X[:, use_ix], axis=0) - y[use_ix] / K)
         # mean-square-error
         error = np.sum(X[:, use_ix], axis=0) - y[use_ix]
         mse = np.sum(np.power(error, 2)) / error.size
         residuals.append(mse)
         obj_val = calc_obj(y, X, components, use_ix)
         obj_vals.append(obj_val)
-        if obj_val < best['obj_val']:
+        if obj_val < best['obj_val'] and stop_early:
             X_tilde = make_estimate(y, X, use_ix)
             best = {
                 'X': X_tilde,
@@ -116,6 +116,14 @@ def run_admm(data, components, num_iter=50, rho=1., use_ix=None, verbose=True,
                 'it': it,
                 'obj_val': obj_val
             }
+    if not stop_early:
+        X_tilde = make_estimate(y, X, use_ix)
+        best = {
+            'X': X_tilde,
+            'u': u,
+            'it': it,
+            'obj_val': obj_val
+        }
     if verbose:
         td = time() - ti
         progress(it + 1, num_iter, '{:.2f} sec\n'.format(td))

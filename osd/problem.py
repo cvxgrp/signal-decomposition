@@ -14,6 +14,7 @@ import abc
 from scipy.optimize import minimize_scalar
 from osd.signal_decomp_admm import run_admm
 from osd.utilities import compose
+import matplotlib.pyplot as plt
 
 class Problem():
     def __init__(self, data, components, residual_term=0):
@@ -38,8 +39,10 @@ class Problem():
 
     def decompose(self, use_set=None, reset=False, admm=False,
                   num_iter=50, rho=0.5, verbose=True,
-                  randomize_start=False, X_init=None, **cvx_kwargs):
+                  randomize_start=False, X_init=None, stop_early=False,
+                  **cvx_kwargs):
         if np.alltrue([c.is_convex for c in self.components]) and not admm:
+            self.weights.value = [c.theta for c in self.components]
             if self.problem is None or reset:
                 problem = self.__construct_cvx_problem(use_set=use_set)
                 self.problem = problem
@@ -56,7 +59,8 @@ class Problem():
             result = run_admm(
                 self.data, self.components, num_iter=num_iter, rho=rho,
                 use_ix=use_set, verbose=verbose,
-                randomize_start=randomize_start, X_init=X_init
+                randomize_start=randomize_start, X_init=X_init,
+                stop_early=stop_early
             )
             self.admm_result = result
             self.estimates = result['X']
@@ -64,6 +68,29 @@ class Problem():
             m1 = 'This problem is non-convex and not solvable with CVXPY. '
             m2 = 'Please try solving with ADMM.'
             print(m1 + m2)
+
+    def plot_decomposition(self, X_real=None, figsize=(10, 8)):
+        K = len(self.components)
+        fig, ax = plt.subplots(nrows=K + 1, sharex=True, figsize=figsize)
+        for k in range(K + 1):
+            if k < K:
+                est = self.estimates[k]
+                ax[k].plot(est, label='estimated', linewidth=1)
+                ax[k].set_title('Component $x^{}$'.format(k + 1))
+                if X_real is not None:
+                    true = X_real[k]
+                    ax[k].plot(true, label='true', linewidth=1)
+            else:
+                ax[k].plot(self.data, label='observed, $y$',
+                           linewidth=1, alpha=0.3, marker='.', color='green')
+                ax[k].plot(np.sum(self.estimates[1:], axis=0),
+                           label='estimated', linewidth=1)
+                if X_real is not None:
+                    ax[k].plot(np.sum(X_real[1:], axis=0), label='true', linewidth=1)
+                ax[k].set_title('Composed Signal')
+            ax[k].legend()
+        plt.tight_layout()
+        return fig
 
     def optimize_weights(self, solver='ECOS', seed=None):
         if seed is None:
@@ -110,16 +137,16 @@ class Problem():
             print('IN PROGRESS')
 
     def holdout_validation(self, holdout=0.2, seed=None, solver='ECOS',
-                               reuse=False, cost=None):
+                               reuse=False, cost=None, admm=False):
         T = len(self.data)
         if seed is not None:
             np.random.seed(seed)
         hold_set = np.random.uniform(0, 1, T) <= holdout
         use_set = ~hold_set
         if not reuse:
-            self.decompose(solver=solver, use_set=use_set, reset=True)
+            self.decompose(solver=solver, use_set=use_set, admm=admm, reset=True)
         else:
-            self.decompose(solver=solver, reset=False)
+            self.decompose(solver=solver, admm=admm, reset=False)
         est_array = np.array(self.estimates)
         hold_est = np.sum(est_array[:, hold_set], axis=0)
         hold_y = self.data[hold_set]
