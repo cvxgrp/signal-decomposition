@@ -19,7 +19,7 @@ class SmoothFirstDifference(Component):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self._c = None
-        self._last_theta = None
+        self._last_weight = None
         self._last_rho = None
         return
 
@@ -32,15 +32,15 @@ class SmoothFirstDifference(Component):
         cost = compose(cvx.sum_squares, diff1)
         return cost
 
-    def prox_op(self, v, theta, rho):
+    def prox_op(self, v, weight, rho):
         c = self._c
         cond1 = c is None
-        cond2 = self._last_theta != theta
+        cond2 = self._last_weight != weight
         cond3 = self._last_rho != rho
         if cond1 or cond2 or cond3:
             n = len(v)
             M = np.diff(np.eye(n), axis=0, n=1)
-            r = 2 * theta / rho
+            r = 2 * weight / rho
             ab = np.zeros((2, n))
             A = np.eye(n) + r * M.T.dot(M)
             for i in range(2):

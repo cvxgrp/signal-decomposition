@@ -23,7 +23,7 @@ class Boolean(Component):
     def _get_cost(self):
         return lambda x: 0
 
-    def prox_op(self, v, theta, rho):
+    def prox_op(self, v, weight, rho):
         r_0 = np.abs(v)
         r_1 = np.abs(v - self.scale)
         x = np.zeros_like(v)
