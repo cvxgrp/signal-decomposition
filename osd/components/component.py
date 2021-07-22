@@ -14,11 +14,11 @@ class Component(ABC):
     def __init__(self, **kwargs):
         self.__parameters = self._get_params()
         self.__cost = self._get_cost()
-        for key in ['vmin', 'vmax', 'vavg', 'period', 'first_val', 'theta']:
+        for key in ['vmin', 'vmax', 'vavg', 'period', 'first_val', 'weight']:
             if key in kwargs.keys():
                 setattr(self, '_' + key, kwargs[key])
                 del kwargs[key]
-            elif key == 'theta':
+            elif key == 'weight':
                 setattr(self, '_' + key, 1)
             else:
                 setattr(self, '_' + key, None)
@@ -72,10 +72,17 @@ class Component(ABC):
         return  self._first_val
 
     @property
-    def theta(self):
-        return self._theta
+    def weight(self):
+        return self._weight
 
-    def make_constraints(self, x):
+    @property
+    def internal_constraints(self):
+        if hasattr(self, '_internal_constraints'):
+            return self._internal_constraints
+        else:
+            return None
+
+    def make_constraints(self, x, T, K):
         c = []
         if self.vmin is not None:
             c.append(x >= self.vmin)
@@ -87,8 +94,12 @@ class Component(ABC):
         if self.period is not None:
             p = self.period
             c.append(x[:-p] == x[p:])
+            c.append(cvx.sum(x[:p]) == 0)
         if self.first_val is not None:
             c.append(x[0] == self.first_val)
+        if self.internal_constraints is not None:
+            for ic in self.internal_constraints:
+                c.append(ic(x, T, K))
         return c
 
     @property

@@ -53,8 +53,8 @@ class MarkovChain(Component):
 
 
 
-    def prox_op(self, v, theta, rho):
-        mu = rho / 2 / theta
+    def prox_op(self, v, weight, rho):
+        mu = rho / 2 / weight
         num_states = self.P.shape[0]
         distances = np.zeros((num_states, len(v)))
         for i in self.states:

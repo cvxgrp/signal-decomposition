@@ -7,6 +7,7 @@ Author: Bennet Meyers
 '''
 
 import cvxpy as cvx
+import numpy as np
 from osd.components.component import Component
 
 
@@ -14,6 +15,10 @@ class LinearTrend(Component):
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
+        self.z = cvx.Variable(2)
+        self._internal_constraints = [
+            lambda x, T, K: x == np.c_[np.ones(T), np.arange(T)] @ self.z
+        ]
         return
 
     @property
@@ -21,6 +26,5 @@ class LinearTrend(Component):
         return True
 
     def _get_cost(self):
-        slope = cvx.Variable()
-        cost = lambda x: None
-        return
+        cost = lambda x: 0
+        return cost

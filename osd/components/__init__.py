@@ -9,3 +9,5 @@ from osd.components.piecewise_constant import PiecewiseConstant
 from osd.components.blank import Blank
 from osd.components.boolean import Boolean
 from osd.components.markov import MarkovChain
+from osd.components.linear_trend import LinearTrend
+from osd.components.approx_periodic import ApproxPeriodic

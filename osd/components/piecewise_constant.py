@@ -31,7 +31,7 @@ class PiecewiseConstant(Component):
     def _get_cost(self):
         return lambda x: 0
 
-    def prox_op(self, v, theta, rho):
+    def prox_op(self, v, weight, rho):
         d = error(v)
         x = dp_seg(v, d, self.num_segments)
         return x

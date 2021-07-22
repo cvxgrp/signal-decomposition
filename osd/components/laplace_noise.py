@@ -32,8 +32,8 @@ class LaplaceNoise(Component):
         cost = compose(cvx.sum, cvx.abs)
         return cost
 
-    def prox_op(self, v, theta, rho):
-        kappa = theta / rho
+    def prox_op(self, v, weight, rho):
+        kappa = weight / rho
         t1 = v - kappa
         t2 = -v - kappa
         x = np.clip(t1, 0, np.inf) - np.clip(t2, 0, np.inf)

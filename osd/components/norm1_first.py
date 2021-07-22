@@ -38,15 +38,15 @@ class SparseFirstDiffConvex(Component):
         cost = compose(cvx.sum, cvx.abs, diff1)
         return cost
 
-    def prox_op(self, vec_in, theta_val, rho_val):
+    def prox_op(self, vec_in, weight_val, rho_val):
         problem = self._prox_prob
         if problem is None:
             n = len(vec_in)
-            theta_over_rho = cvx.Parameter(value=theta_val / rho_val,
-                                           name='theta_over_rho', pos=True)
+            weight_over_rho = cvx.Parameter(value=weight_val / rho_val,
+                                           name='weight_over_rho', pos=True)
             v = cvx.Parameter(n, value=vec_in, name='vec_in')
             x = cvx.Variable(n)
-            cost = theta_over_rho * 2 * cvx.norm1(
+            cost = weight_over_rho * 2 * cvx.norm1(
                 cvx.diff(x)) + cvx.sum_squares(x - v)
             c = []
             if self.vmin is not None:
@@ -66,9 +66,9 @@ class SparseFirstDiffConvex(Component):
         else:
             parameters = {p.name(): p for p in problem.parameters()}
             parameters['vec_in'].value = vec_in
-            if ~np.isclose(theta_val / rho_val,
-                           parameters['theta_over_rho'].value,
+            if ~np.isclose(weight_val / rho_val,
+                           parameters['weight_over_rho'].value,
                            atol=1e-3):
-                parameters['theta'].value = theta_val / rho_val
+                parameters['weight'].value = weight_val / rho_val
         problem.solve(solver='MOSEK')
         return problem.variables()[0].value

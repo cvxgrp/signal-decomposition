@@ -23,6 +23,6 @@ class GaussNoise(Component):
     def _get_cost(self):
         return cvx.sum_squares
 
-    def prox_op(self, v, theta, rho):
-        r = rho / (2 * theta + rho)
+    def prox_op(self, v, weight, rho):
+        r = rho / (2 * weight + rho)
         return r * np.asarray(v)

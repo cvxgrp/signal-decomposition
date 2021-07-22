@@ -45,8 +45,8 @@ def calc_obj(y, X, components, use_ix):
             cost = components[k].cost(X_tilde[k]).value.item()
         except AttributeError:
             cost = components[k].cost(X_tilde[k])
-        theta = components[k].theta
-        obj_val += theta * cost
+        weight = components[k].weight
+        obj_val += weight * cost
     return obj_val
 
 def run_admm(data, components, num_iter=50, rho=1., use_ix=None, verbose=True,
@@ -98,8 +98,8 @@ def run_admm(data, components, num_iter=50, rho=1., use_ix=None, verbose=True,
         # Apply proximal operators for each signal class
         for k in range(K):
             prox = components[k].prox_op
-            theta = components[k].theta
-            X[k, :] = prox(X[k, :] - u, theta, rho)
+            weight = components[k].weight
+            X[k, :] = prox(X[k, :] - u, weight, rho)
         # Consensus step
         u[use_ix] += 2 * (np.average(X[:, use_ix], axis=0) - y[use_ix] / K)
         # mean-square-error
