@@ -13,7 +13,7 @@ from itertools import chain
 import abc
 from scipy.optimize import minimize_scalar
 from sklearn.model_selection import train_test_split
-from osd.signal_decomp_admm import run_admm
+from osd.signal_decomp_admm import run_admm, calc_obj
 from osd.utilities import compose
 import matplotlib.pyplot as plt
 
@@ -43,6 +43,15 @@ class Problem():
                                      value=[c.weight for c in self.components])
         self.use_set = None
 
+    @property
+    def objective_value(self):
+        if self.estimates is not None:
+            obj_val = calc_obj(self.data, self.estimates, self.components,
+                               self.use_set)
+            return obj_val
+        else:
+            return
+
 
     def decompose(self, use_set=None, reset=False, admm=False,
                   num_iter=50, rho=0.5, verbose=True,
@@ -52,6 +61,7 @@ class Problem():
             use_set = self.known_set
         else:
             use_set = np.logical_and(use_set, self.known_set)
+        self.use_set = use_set
         if np.alltrue([c.is_convex for c in self.components]) and not admm:
             self.weights.value = [c.weight for c in self.components]
             if self.problem is None or reset or np.any(use_set != self.use_set):
@@ -114,33 +124,38 @@ class Problem():
         holdout_cost = resid_cost(residuals).value
         return holdout_cost.item()
 
-    def plot_decomposition(self, X_real=None, figsize=(10, 8)):
+    def plot_decomposition(self, x_series=None, X_real=None, figsize=(10, 8),
+                           label='estimated'):
         K = len(self.components)
         fig, ax = plt.subplots(nrows=K + 1, sharex=True, figsize=figsize)
+        if x_series is None:
+            xs = np.arange(self.estimates.shape[1])
+        else:
+            xs = np.copy(x_series)
         for k in range(K + 1):
             if k == 0:
                 est = self.estimates[k]
                 s = self.use_set
-                xs = np.arange(len(est))
-                ax[k].plot(xs[s], est[s], label='estimated', linewidth=1)
+                ax[k].plot(xs[s], est[s], label=label, linewidth=1)
                 ax[k].set_title('Component $x^{}$'.format(k + 1))
                 if X_real is not None:
                     true = X_real[k]
                     ax[k].plot(true, label='true', linewidth=1)
             elif k < K:
                 est = self.estimates[k]
-                ax[k].plot(est, label='estimated', linewidth=1)
+                ax[k].plot(xs, est, label=label, linewidth=1)
                 ax[k].set_title('Component $x^{}$'.format(k + 1))
                 if X_real is not None:
                     true = X_real[k]
-                    ax[k].plot(true, label='true', linewidth=1)
+                    ax[k].plot(xs, true, label='true', linewidth=1)
             else:
-                ax[k].plot(self.data, label='observed, $y$',
+                ax[k].plot(xs, self.data, label='observed, $y$',
                            linewidth=1, color='green')
-                ax[k].plot(np.sum(self.estimates[1:], axis=0),
-                           label='estimated minus residual', linewidth=1)
+                ax[k].plot(xs, np.sum(self.estimates[1:], axis=0),
+                           label=label+' minus residual', linewidth=1)
                 if X_real is not None:
-                    ax[k].plot(np.sum(X_real[1:], axis=0), label='true', linewidth=1)
+                    ax[k].plot(xs, np.sum(X_real[1:], axis=0), label='true',
+                               linewidth=1)
                 ax[k].set_title('Composed Signal')
             ax[k].legend()
         plt.tight_layout()

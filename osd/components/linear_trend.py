@@ -15,9 +15,9 @@ class LinearTrend(Component):
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        self.z = cvx.Variable(2)
+        # self.z = cvx.Variable(2)
         self._internal_constraints = [
-            lambda x, T, K: x == np.c_[np.ones(T), np.arange(T)] @ self.z
+            lambda x, T, K: cvx.diff(x, k=2) == 0
         ]
         return
 

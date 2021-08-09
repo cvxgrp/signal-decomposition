@@ -11,3 +11,4 @@ from osd.components.boolean import Boolean
 from osd.components.markov import MarkovChain
 from osd.components.linear_trend import LinearTrend
 from osd.components.approx_periodic import ApproxPeriodic
+from osd.components.norm1_fourth import SparseFourthDiffConvex

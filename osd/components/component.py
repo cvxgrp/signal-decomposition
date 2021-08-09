@@ -75,6 +75,9 @@ class Component(ABC):
     def weight(self):
         return self._weight
 
+    def set_weight(self, weight):
+        self._weight = weight
+
     @property
     def internal_constraints(self):
         if hasattr(self, '_internal_constraints'):

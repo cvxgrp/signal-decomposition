@@ -9,7 +9,6 @@ Author: Bennet Meyers
 import scipy.linalg as spl
 import numpy as np
 import cvxpy as cvx
-from functools import partial
 from osd.components.component import Component
 from osd.utilities import compose
 
@@ -17,6 +16,11 @@ class ApproxPeriodic(Component):
 
     def __init__(self, period, **kwargs):
         self._approx_period = period
+        self._internal_constraints = [
+            lambda x, T, K: cvx.sum(x[:period]) == 0,
+            lambda x, T, K: cvx.sum(x[-period:]) == 0,
+            lambda x, T, K: cvx.sum(x) == 0
+        ]
         super().__init__(**kwargs)
         self._c = None
         self._last_weight = None
