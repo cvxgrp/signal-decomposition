@@ -84,7 +84,7 @@ class Problem():
                 self.data, self.components, num_iter=num_iter, rho=rho,
                 use_ix=use_set, verbose=verbose,
                 randomize_start=randomize_start, X_init=X_init,
-                stop_early=stop_early
+                stop_early=stop_early, residual_term=self.residual_term
             )
             self.admm_result = result
             self.estimates = result['X']

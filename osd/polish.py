@@ -8,7 +8,7 @@ Author: Bennet Meyers
 import numpy as np
 from osd.signal_decomp_admm import make_estimate
 
-def boolean_polish(problem, boolean_component, scale, residual_component=0):
+def boolean_polish(problem, boolean_component, scale, residual_term=0):
     swapped_ix = []
     obj_val = problem.objective_value
     for ix in range(problem.T):
@@ -20,7 +20,8 @@ def boolean_polish(problem, boolean_component, scale, residual_component=0):
         if problem.objective_value < obj_val:
             obj_val = problem.objective_value
             problem.estimates = make_estimate(problem.data, problem.estimates,
-                                              problem.use_set)
+                                              problem.use_set,
+                                              residual_term=residual_term)
             swapped_ix.append(ix)
         else:
             problem.estimates[boolean_component, ix] = est

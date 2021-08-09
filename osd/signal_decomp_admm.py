@@ -11,7 +11,7 @@ import numpy as np
 from time import time
 from osd.utilities import progress
 
-def make_estimate(y, X, use_ix):
+def make_estimate(y, X, use_ix, residual_term=0):
     """
     After any given iteration of the ADMM algorithm, generate an estimate that
     is feasible with respect to the global equality constraint by making x0
@@ -24,11 +24,14 @@ def make_estimate(y, X, use_ix):
     :return: the estimate with the first component replaced by the residuals
     """
     X_tilde = np.copy(X)
-    X_tilde[0, use_ix] = y[use_ix] - np.sum(X[1:, use_ix], axis=0)
-    X_tilde[0, ~use_ix] = 0
+    sum_ix = np.arange(X.shape[0])
+    sum_ix = np.delete(sum_ix, residual_term)
+    X_tilde[residual_term, use_ix] = y[use_ix] - np.sum(X[sum_ix][:, use_ix],
+                                                        axis=0)
+    X_tilde[residual_term, ~use_ix] = 0
     return X_tilde
 
-def calc_obj(y, X, components, use_ix):
+def calc_obj(y, X, components, use_ix, residual_term=0):
     """
     Calculate the current objective value of the problem
 
@@ -38,7 +41,7 @@ def calc_obj(y, X, components, use_ix):
     :return: the scalar problem objective value
     """
     K = len(components)
-    X_tilde = make_estimate(y, X, use_ix)
+    X_tilde = make_estimate(y, X, use_ix, residual_term=residual_term)
     obj_val = 0
     for k in range(K):
         try:
@@ -50,7 +53,8 @@ def calc_obj(y, X, components, use_ix):
     return obj_val
 
 def run_admm(data, components, num_iter=50, rho=1., use_ix=None, verbose=True,
-             randomize_start=False, X_init=None, stop_early=False):
+             randomize_start=False, X_init=None, stop_early=False,
+             residual_term=0):
     """
     Serial implementation of SD ADMM algorithm.
 
@@ -106,10 +110,11 @@ def run_admm(data, components, num_iter=50, rho=1., use_ix=None, verbose=True,
         error = np.sum(X[:, use_ix], axis=0) - y[use_ix]
         mse = np.sum(np.power(error, 2)) / error.size
         residuals.append(mse)
-        obj_val = calc_obj(y, X, components, use_ix)
+        obj_val = calc_obj(y, X, components, use_ix,
+                           residual_term=residual_term)
         obj_vals.append(obj_val)
         if obj_val < best['obj_val'] and stop_early:
-            X_tilde = make_estimate(y, X, use_ix)
+            X_tilde = make_estimate(y, X, use_ix, residual_term=residual_term)
             best = {
                 'X': X_tilde,
                 'u': u,
