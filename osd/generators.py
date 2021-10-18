@@ -84,16 +84,20 @@ def make_pwc_data(length, randomize=True, segments=4, points=None, shifts=None):
             replace=False
         )
         points.sort()
-        points = np.r_[[0], points, [length]]
-        # shifts = np.random.uniform(-1, 1, size=segments)
-        shifts = np.random.randn(segments)
+        points = np.r_[points, [length]]
+        shifts = np.random.uniform(0.45, 1.25, size=segments - 1)
+        shifts *= np.random.randint(0, 2, size=segments - 1) * 2 - 1
+        print(shifts)
     elif points is None:
         points = [0, int(length * 0.2), int(length * 0.55), int(length * 0.85), length]
     elif shifts is None:
         shifts = [0, .5, -0.75, .2]
     cp = np.zeros(length)
+    value = 0
     for ix, shft in enumerate(shifts):
         a = points[ix]
         b = points[ix + 1]
-        cp[a:b] = shft
+        value += shft
+        cp[a:b] = value
+        print(a, b, shft)
     return cp

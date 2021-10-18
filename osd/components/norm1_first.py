@@ -69,6 +69,6 @@ class SparseFirstDiffConvex(Component):
             if ~np.isclose(weight_val / rho_val,
                            parameters['weight_over_rho'].value,
                            atol=1e-3):
-                parameters['weight'].value = weight_val / rho_val
+                parameters['weight_over_rho'].value = weight_val / rho_val
         problem.solve(solver='MOSEK')
         return problem.variables()[0].value

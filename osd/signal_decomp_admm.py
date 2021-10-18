@@ -53,7 +53,7 @@ def calc_obj(y, X, components, use_ix, residual_term=0):
     return obj_val
 
 def run_admm(data, components, num_iter=50, rho=1., use_ix=None, verbose=True,
-             randomize_start=False, X_init=None, stop_early=False,
+             randomize_start=False, X_init=None, u_init=None, stop_early=False,
              residual_term=0):
     """
     Serial implementation of SD ADMM algorithm.
@@ -72,7 +72,6 @@ def run_admm(data, components, num_iter=50, rho=1., use_ix=None, verbose=True,
     K = len(components)
     if use_ix is None:
         use_ix = np.ones_like(data, dtype=bool)
-    u = np.zeros_like(y)
     if X_init is None:
         X = np.zeros((K, T))
         if not randomize_start:
@@ -86,7 +85,13 @@ def run_admm(data, components, num_iter=50, rho=1., use_ix=None, verbose=True,
         m1 = 'A initial value was given for X that does not match the problem shape.'
         print(m1)
         return
-    residuals = []
+    if u_init is None:
+        u = np.zeros_like(y)
+    else:
+        u = np.copy(u_init)
+    gradients = np.zeros_like(X)
+    norm_primal_residual = []
+    norm_dual_residual = []
     obj_vals = []
     ti = time()
     best = {
@@ -95,7 +100,11 @@ def run_admm(data, components, num_iter=50, rho=1., use_ix=None, verbose=True,
         'it': None,
         'obj_val': np.inf
     }
-    for it in range(num_iter):
+    if len(np.atleast_1d(rho)) == 1:
+        rho = np.ones(num_iter, dtype=float) * rho
+    else:
+        num_iter = len(rho)
+    for it, rh in enumerate(rho):
         if verbose:
             td = time() - ti
             progress(it, num_iter, '{:.2f} sec'.format(td))
@@ -103,13 +112,19 @@ def run_admm(data, components, num_iter=50, rho=1., use_ix=None, verbose=True,
         for k in range(K):
             prox = components[k].prox_op
             weight = components[k].weight
-            X[k, :] = prox(X[k, :] - u, weight, rho)
+            x_new = prox(X[k, :] - u, weight, rh)
+            gradients[k, :] = rh * (X[k, :] - u - x_new)
+            X[k, :] = x_new
         # Consensus step
         u[use_ix] += 2 * (np.average(X[:, use_ix], axis=0) - y[use_ix] / K)
-        # mean-square-error
-        error = np.sum(X[:, use_ix], axis=0) - y[use_ix]
-        mse = np.sum(np.power(error, 2)) / error.size
-        residuals.append(mse)
+        # calculate primal and dual residuals
+        primal_resid = np.sum(X, axis=0)[use_ix] - y[use_ix]
+        dual_resid = gradients - X[0] * 2 / y.size
+        n_r_k = np.linalg.norm(primal_resid)
+        n_s_k = np.linalg.norm(dual_resid)
+        norm_primal_residual.append(n_r_k)
+        norm_dual_residual.append(n_s_k)
+
         obj_val = calc_obj(y, X, components, use_ix,
                            residual_term=residual_term)
         obj_vals.append(obj_val)
@@ -136,7 +151,8 @@ def run_admm(data, components, num_iter=50, rho=1., use_ix=None, verbose=True,
         'X': best['X'],
         'u': best['u'],
         'it': best['it'],
-        'residuals': residuals,
+        'primal_r': norm_primal_residual,
+        'dual_r': norm_dual_residual,
         'obj_vals': obj_vals,
         'best_obj': best['obj_val']
     }

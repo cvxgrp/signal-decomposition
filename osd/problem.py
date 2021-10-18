@@ -39,7 +39,7 @@ class Problem():
         self.residual_term = residual_term # typically 0
         self.known_set = ~np.isnan(data)
         # CVXPY objects (not used for ADMM)
-        self.weights = cvx.Parameter(shape=K, nonneg=True,
+        self.__weights = cvx.Parameter(shape=K, nonneg=True,
                                      value=[c.weight for c in self.components])
         self.use_set = None
 
@@ -52,18 +52,31 @@ class Problem():
         else:
             return
 
+    @property
+    def weights(self):
+        return self.__weights.value
+
+    def set_weights(self, weights):
+        if len(self.__weights.value) == len(weights):
+            self.__weights.value = weights
+        elif len(self.__weights.value) == len(weights) + 1:
+            self.__weights.value = np.r_[[1], weights]
+        for c, w in zip(self.components, self.weights):
+            c.set_weight(w)
+        return
 
     def decompose(self, use_set=None, reset=False, admm=False,
                   num_iter=50, rho=0.5, verbose=True,
-                  randomize_start=False, X_init=None, stop_early=False,
+                  randomize_start=False, X_init=None, u_init=None,
+                  stop_early=False,
                   **cvx_kwargs):
         if use_set is None:
             use_set = self.known_set
         else:
             use_set = np.logical_and(use_set, self.known_set)
         self.use_set = use_set
+        self.set_weights([c.weight for c in self.components])
         if np.alltrue([c.is_convex for c in self.components]) and not admm:
-            self.weights.value = [c.weight for c in self.components]
             if self.problem is None or reset or np.any(use_set != self.use_set):
                 problem = self.__construct_cvx_problem(use_set=use_set)
                 self.problem = problem
@@ -76,14 +89,14 @@ class Problem():
             problem.solve(**cvx_kwargs)
             sorted_order = np.argsort([v.name() for v in problem.variables()])
             ests = np.array([x.value for x in
-                             np.asarray(problem.variables())    [sorted_order]
+                             np.asarray(problem.variables())[sorted_order]
                              if 'x_' in x.name()])
             self.estimates = ests
         elif admm:
             result = run_admm(
                 self.data, self.components, num_iter=num_iter, rho=rho,
                 use_ix=use_set, verbose=verbose,
-                randomize_start=randomize_start, X_init=X_init,
+                randomize_start=randomize_start, X_init=X_init, u_init=u_init,
                 stop_early=stop_early, residual_term=self.residual_term
             )
             self.admm_result = result
@@ -122,7 +135,7 @@ class Problem():
         elif cost == 'l2':
             resid_cost = cvx.sum_squares
         holdout_cost = resid_cost(residuals).value
-        return holdout_cost.item()
+        return holdout_cost.item() / len(residuals)
 
     def plot_decomposition(self, x_series=None, X_real=None, figsize=(10, 8),
                            label='estimated'):
@@ -157,53 +170,55 @@ class Problem():
                     ax[k].plot(xs, np.sum(X_real[1:], axis=0), label='true',
                                linewidth=1)
                 ax[k].set_title('Composed Signal')
-            ax[k].legend()
+                ax[k].legend()
+            if X_real is not None:
+                ax[k].legend()
         plt.tight_layout()
         return fig
 
-    def optimize_weights(self, solver='ECOS', seed=None):
-        if seed is None:
-            seed = np.random.random_integers(0, 1000)
-        if self.num_components == 2:
-            search_ix = 1 - self.residual_term
-            _ = self.holdout_validation(solver=solver, seed=seed)
-            new_vals = np.ones(2)
-
-            def cost_meta(v):
-                val = 10 ** v
-                new_vals[search_ix] = val
-                self.weights.value = new_vals
-                cost = self.holdout_validation(solver=solver, seed=seed,
-                                               reuse=True)
-                return cost
-            res = minimize_scalar(cost_meta, bounds=(-2, 10), method='bounded')
-            best_val = 10 ** res.x
-            new_vals[search_ix] = best_val
-            self.weights.value = new_vals
-            self.demix(solver=solver, reset=True)
-            return
-        else:
-            print('IN PROGRESS')
-
-    def optimize_parameters(self, solver='ECOS', seed=None):
-        if seed is None:
-            seed = np.random.random_integers(0, 1000)
-        if self.num_parameters == 1:
-            k1, k2 = [(k1, k2) for k1, value in self.parameters.items()
-                      for k2 in value.keys()][0]
-            _ = self.holdout_validation(solver=solver, seed=seed)
-            def cost_meta(val):
-                self.parameters[k1][k2].value = val
-                cost = self.holdout_validation(solver=solver, seed=seed,
-                                               reuse=True)
-                return cost
-            res = minimize_scalar(cost_meta, bounds=(0, 1), method='bounded')
-            best_val = res.x
-            self.parameters[k1][k2].value = best_val
-            self.decompose(solver=solver, reset=True)
-            return
-        else:
-            print('IN PROGRESS')
+    # def optimize_weights(self, solver='ECOS', seed=None):
+    #     if seed is None:
+    #         seed = np.random.random_integers(0, 1000)
+    #     if self.num_components == 2:
+    #         search_ix = 1 - self.residual_term
+    #         _ = self.holdout_validation(solver=solver, seed=seed)
+    #         new_vals = np.ones(2)
+    #
+    #         def cost_meta(v):
+    #             val = 10 ** v
+    #             new_vals[search_ix] = val
+    #             self.weights.value = new_vals
+    #             cost = self.holdout_validation(solver=solver, seed=seed,
+    #                                            reuse=True)
+    #             return cost
+    #         res = minimize_scalar(cost_meta, bounds=(-2, 10), method='bounded')
+    #         best_val = 10 ** res.x
+    #         new_vals[search_ix] = best_val
+    #         self.weights.value = new_vals
+    #         self.demix(solver=solver, reset=True)
+    #         return
+    #     else:
+    #         print('IN PROGRESS')
+    #
+    # def optimize_parameters(self, solver='ECOS', seed=None):
+    #     if seed is None:
+    #         seed = np.random.random_integers(0, 1000)
+    #     if self.num_parameters == 1:
+    #         k1, k2 = [(k1, k2) for k1, value in self.parameters.items()
+    #                   for k2 in value.keys()][0]
+    #         _ = self.holdout_validation(solver=solver, seed=seed)
+    #         def cost_meta(val):
+    #             self.parameters[k1][k2].value = val
+    #             cost = self.holdout_validation(solver=solver, seed=seed,
+    #                                            reuse=True)
+    #             return cost
+    #         res = minimize_scalar(cost_meta, bounds=(0, 1), method='bounded')
+    #         best_val = res.x
+    #         self.parameters[k1][k2].value = best_val
+    #         self.decompose(solver=solver, reset=True)
+    #         return
+    #     else:
+    #         print('IN PROGRESS')
 
     def __construct_cvx_problem(self, use_set=None):
         if use_set is None:
@@ -213,7 +228,7 @@ class Problem():
         y_tilde[np.isnan(y_tilde)] = 0
         T = self.T
         K = self.num_components
-        weights = self.weights
+        weights = self.__weights
         xs = [cvx.Variable(T, name='x_{}'.format(i)) for i in range(K)]
         costs = [c.cost(x) for c, x in zip(self.components, xs)]
         costs = [weights[i] * cost for i, cost in enumerate(costs)]

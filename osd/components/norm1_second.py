@@ -23,8 +23,9 @@ from osd.utilities import compose
 
 class SparseSecondDiffConvex(Component):
 
-    def __init__(self, **kwargs):
+    def __init__(self, internal_scale=1., **kwargs):
         super().__init__(**kwargs)
+        self.internal_scale = internal_scale
         return
 
     @property
@@ -33,5 +34,5 @@ class SparseSecondDiffConvex(Component):
 
     def _get_cost(self):
         diff2 = partial(cvx.diff, k=2)
-        cost = compose(cvx.sum, cvx.abs, diff2)
+        cost = compose(cvx.sum, cvx.abs, lambda x: self.internal_scale * x, diff2)
         return cost
