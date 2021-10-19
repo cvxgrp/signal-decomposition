@@ -56,6 +56,10 @@ class Problem():
     def weights(self):
         return self.__weights.value
 
+    @property
+    def is_convex(self):
+        return np.alltrue([c.is_convex for c in self.components])
+
     def set_weights(self, weights):
         if len(self.__weights.value) == len(weights):
             self.__weights.value = weights
@@ -76,7 +80,7 @@ class Problem():
             use_set = np.logical_and(use_set, self.known_set)
         self.use_set = use_set
         self.set_weights([c.weight for c in self.components])
-        if np.alltrue([c.is_convex for c in self.components]) and not admm:
+        if self.is_convex and not admm:
             if self.problem is None or reset or np.any(use_set != self.use_set):
                 problem = self.__construct_cvx_problem(use_set=use_set)
                 self.problem = problem

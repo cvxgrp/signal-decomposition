@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 ''' Gaussian Noise Component
 
 This module contains the class for Gaussian Noise
