@@ -6,7 +6,8 @@ Author: Bennet Meyers
 '''
 
 import numpy as np
-from osd.signal_decomp_admm import make_estimate
+from osd.utilities import make_estimate
+
 
 def boolean_polish(problem, boolean_component, scale, residual_term=0):
     swapped_ix = []

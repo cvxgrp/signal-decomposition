@@ -11,9 +11,10 @@ from osd.components.component import Component
 
 class Boolean(Component):
 
-    def __init__(self, scale=1, **kwargs):
+    def __init__(self, scale=1, shift=0, **kwargs):
         super().__init__(**kwargs)
         self.scale = scale
+        self.shift = shift
         return
 
     @property
@@ -24,8 +25,10 @@ class Boolean(Component):
         return lambda x: 0
 
     def prox_op(self, v, weight, rho):
-        r_0 = np.abs(v)
-        r_1 = np.abs(v - self.scale)
-        x = np.zeros_like(v)
-        x[r_1 <= r_0] = self.scale
+        low_val = self.shift
+        high_val = self.scale + self.shift
+        r_0 = np.abs(v - low_val)
+        r_1 = np.abs(v - high_val)
+        x = np.ones_like(v) * low_val
+        x[r_1 <= r_0] = high_val
         return x

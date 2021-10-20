@@ -10,6 +10,9 @@ Author: Bennet Meyers
 import functools
 import sys
 
+import numpy as np
+
+
 def compose(*functions):
     """
     Create a create a composition of two or more functions.
@@ -40,3 +43,46 @@ def progress(count, total, status='', bar_length=60):
 
     sys.stdout.write('[%s] %s%s ...%s\r' % (bar, percents, '%', status))
     sys.stdout.flush()
+
+
+def make_estimate(y, X, use_ix, residual_term=0):
+    """
+    After any given iteration of the ADMM algorithm, generate an estimate that
+    is feasible with respect to the global equality constraint by making x0
+    equal to the residual between the input data y and the rest of the
+    component estimates
+
+    :param y: numpy array containing problem data
+    :param X: current estimate of decomposed signal components from ADMM
+    :param use_ix: the known index set (Boolean array)
+    :return: the estimate with the first component replaced by the residuals
+    """
+    X_tilde = np.copy(X)
+    sum_ix = np.arange(X.shape[0])
+    sum_ix = np.delete(sum_ix, residual_term)
+    X_tilde[residual_term, use_ix] = y[use_ix] - np.sum(X[sum_ix][:, use_ix],
+                                                        axis=0)
+    X_tilde[residual_term, ~use_ix] = 0
+    return X_tilde
+
+
+def calc_obj(y, X, components, use_ix, residual_term=0):
+    """
+    Calculate the current objective value of the problem
+
+    :param y: numpy array containing problem data
+    :param X: current estimate of decomposed signal components from ADMM
+    :param use_ix: the known index set (Boolean array)
+    :return: the scalar problem objective value
+    """
+    K = len(components)
+    X_tilde = make_estimate(y, X, use_ix, residual_term=residual_term)
+    obj_val = 0
+    for k in range(K):
+        try:
+            cost = components[k].cost(X_tilde[k]).value.item()
+        except AttributeError:
+            cost = components[k].cost(X_tilde[k])
+        weight = components[k].weight
+        obj_val += weight * cost
+    return obj_val

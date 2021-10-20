@@ -18,9 +18,11 @@ import numpy as np
 from osd.components.component import Component
 
 class OneJump(Component):
-    def __init__(self, start_value=None, min_fraction=None, **kwargs):
+    def __init__(self, start_value=None, end_value=None, min_fraction=None,
+                 **kwargs):
         super().__init__(**kwargs)
         self.start_value = start_value
+        self.end_value = end_value # TODO: add this to prox op
         self.min_fraction = min_fraction
         return
 

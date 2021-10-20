@@ -13,8 +13,9 @@ from itertools import chain
 import abc
 from scipy.optimize import minimize_scalar
 from sklearn.model_selection import train_test_split
-from osd.signal_decomp_admm import run_admm, calc_obj
-from osd.utilities import compose
+from osd.signal_decomp_admm import run_admm
+from osd.signal_decomp_bcd import run_bcd
+from osd.utilities import compose, calc_obj
 import matplotlib.pyplot as plt
 
 class Problem():
@@ -35,6 +36,7 @@ class Problem():
         self.estimates = None
         self.problem = None
         self.admm_result = None
+        self.bcd_result = None
         K = self.num_components
         self.residual_term = residual_term # typically 0
         self.known_set = ~np.isnan(data)
@@ -69,18 +71,21 @@ class Problem():
             c.set_weight(w)
         return
 
-    def decompose(self, use_set=None, reset=False, admm=False,
-                  num_iter=50, rho=0.5, verbose=True,
+    def decompose(self, use_set=None, rho=None, how='admm',
+                  num_iter=1e3, verbose=True, reset=False,
                   randomize_start=False, X_init=None, u_init=None,
-                  stop_early=False,
+                  stop_early=False, stopping_tolerance=1e-5,
                   **cvx_kwargs):
+        if rho is None:
+            rho = 2 / self.data.size
+        num_iter = int(num_iter)
         if use_set is None:
             use_set = self.known_set
         else:
             use_set = np.logical_and(use_set, self.known_set)
         self.use_set = use_set
         self.set_weights([c.weight for c in self.components])
-        if self.is_convex and not admm:
+        if self.is_convex and how.lower() in ['cvx', 'cvxpy']:
             if self.problem is None or reset or np.any(use_set != self.use_set):
                 problem = self.__construct_cvx_problem(use_set=use_set)
                 self.problem = problem
@@ -96,14 +101,22 @@ class Problem():
                              np.asarray(problem.variables())[sorted_order]
                              if 'x_' in x.name()])
             self.estimates = ests
-        elif admm:
+        elif how.lower() in ['admm', 'sd-admm']:
             result = run_admm(
                 self.data, self.components, num_iter=num_iter, rho=rho,
                 use_ix=use_set, verbose=verbose,
                 randomize_start=randomize_start, X_init=X_init, u_init=u_init,
-                stop_early=stop_early, residual_term=self.residual_term
+                stop_early=stop_early, stopping_tolerance=stopping_tolerance,
+                residual_term=self.residual_term
             )
             self.admm_result = result
+            self.estimates = result['X']
+        elif how.lower() in ['bcd', 'sd-bcd']:
+            result = run_bcd(
+                self.data, self.components, num_iter=num_iter, use_ix=use_set,
+                stopping_tolerance=stopping_tolerance, X_init=X_init
+            )
+            self.bcd_result = result
             self.estimates = result['X']
         else:
             m1 = 'This problem is non-convex and not solvable with CVXPY. '
@@ -143,6 +156,9 @@ class Problem():
 
     def plot_decomposition(self, x_series=None, X_real=None, figsize=(10, 8),
                            label='estimated'):
+        if self.estimates is None:
+            print('No decomposition available.')
+            return
         K = len(self.components)
         fig, ax = plt.subplots(nrows=K + 1, sharex=True, figsize=figsize)
         if x_series is None:

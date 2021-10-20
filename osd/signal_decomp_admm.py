@@ -9,52 +9,12 @@ Author: Bennet Meyers
 
 import numpy as np
 from time import time
-from osd.utilities import progress
+from osd.utilities import progress, make_estimate, calc_obj
 
-def make_estimate(y, X, use_ix, residual_term=0):
-    """
-    After any given iteration of the ADMM algorithm, generate an estimate that
-    is feasible with respect to the global equality constraint by making x0
-    equal to the residual between the input data y and the rest of the
-    component estimates
-
-    :param y: numpy array containing problem data
-    :param X: current estimate of decomposed signal components from ADMM
-    :param use_ix: the known index set (Boolean array)
-    :return: the estimate with the first component replaced by the residuals
-    """
-    X_tilde = np.copy(X)
-    sum_ix = np.arange(X.shape[0])
-    sum_ix = np.delete(sum_ix, residual_term)
-    X_tilde[residual_term, use_ix] = y[use_ix] - np.sum(X[sum_ix][:, use_ix],
-                                                        axis=0)
-    X_tilde[residual_term, ~use_ix] = 0
-    return X_tilde
-
-def calc_obj(y, X, components, use_ix, residual_term=0):
-    """
-    Calculate the current objective value of the problem
-
-    :param y: numpy array containing problem data
-    :param X: current estimate of decomposed signal components from ADMM
-    :param use_ix: the known index set (Boolean array)
-    :return: the scalar problem objective value
-    """
-    K = len(components)
-    X_tilde = make_estimate(y, X, use_ix, residual_term=residual_term)
-    obj_val = 0
-    for k in range(K):
-        try:
-            cost = components[k].cost(X_tilde[k]).value.item()
-        except AttributeError:
-            cost = components[k].cost(X_tilde[k])
-        weight = components[k].weight
-        obj_val += weight * cost
-    return obj_val
 
 def run_admm(data, components, num_iter=50, rho=1., use_ix=None, verbose=True,
              randomize_start=False, X_init=None, u_init=None, stop_early=False,
-             residual_term=0):
+             residual_term=0, stopping_tolerance=1e-6):
     """
     Serial implementation of SD ADMM algorithm.
 
@@ -90,7 +50,6 @@ def run_admm(data, components, num_iter=50, rho=1., use_ix=None, verbose=True,
     else:
         u = np.copy(u_init)
     gradients = np.zeros_like(X)
-    norm_primal_residual = []
     norm_dual_residual = []
     obj_vals = []
     ti = time()
@@ -119,23 +78,23 @@ def run_admm(data, components, num_iter=50, rho=1., use_ix=None, verbose=True,
         u[use_ix] += 2 * (np.average(X[:, use_ix], axis=0) - y[use_ix] / K)
         # calculate primal and dual residuals
         primal_resid = np.sum(X, axis=0)[use_ix] - y[use_ix]
-        dual_resid = gradients - X[0] * 2 / y.size
-        n_r_k = np.linalg.norm(primal_resid)
-        n_s_k = np.linalg.norm(dual_resid)
-        norm_primal_residual.append(n_r_k)
+        X_tilde = make_estimate(y, X, use_ix, residual_term=residual_term)
+        dual_resid = gradients - X_tilde[0] * 2 / y.size
+        n_s_k = np.linalg.norm(dual_resid) / np.sqrt(dual_resid.size)
         norm_dual_residual.append(n_s_k)
-
         obj_val = calc_obj(y, X, components, use_ix,
                            residual_term=residual_term)
         obj_vals.append(obj_val)
-        if obj_val < best['obj_val'] and stop_early:
-            X_tilde = make_estimate(y, X, use_ix, residual_term=residual_term)
+        if (obj_val < best['obj_val'] and n_s_k <= stopping_tolerance
+                and stop_early):
             best = {
                 'X': X_tilde,
                 'u': u,
                 'it': it,
                 'obj_val': obj_val
             }
+        if np.average(norm_dual_residual[-5:]) <= stopping_tolerance:
+            break
     if not stop_early:
         X_tilde = make_estimate(y, X, use_ix)
         best = {
@@ -146,13 +105,12 @@ def run_admm(data, components, num_iter=50, rho=1., use_ix=None, verbose=True,
         }
     if verbose:
         td = time() - ti
-        progress(it + 1, num_iter, '{:.2f} sec\n'.format(td))
+        progress(num_iter, num_iter, '{:.2f} sec\n'.format(td))
     outdict = {
         'X': best['X'],
         'u': best['u'],
         'it': best['it'],
-        'primal_r': norm_primal_residual,
-        'dual_r': norm_dual_residual,
+        'optimality_residual': norm_dual_residual,
         'obj_vals': obj_vals,
         'best_obj': best['obj_val']
     }
