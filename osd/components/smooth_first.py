@@ -14,6 +14,10 @@ import cvxpy as cvx
 from functools import partial
 from osd.components.component import Component
 from osd.utilities import compose
+from osd.components.quadlin_utilities import (
+    build_constraint_matrix,
+    build_constraint_rhs
+)
 
 class SmoothFirstDifference(Component):
 
@@ -45,16 +49,26 @@ class SmoothFirstDifference(Component):
             D = m2 - m1
             P = 2 * D.T.dot(D) * weight
             M = P + rho * sp.identity(P.shape[0])
+            # Build constraints matrix
+            A = build_constraint_matrix(
+                n, self.period, self.vavg, self.first_val
+            )
+            if A is not None:
+                M = sp.bmat([
+                    [M, A.T],
+                    [A, None]
+                ])
             M = M.tocsc()
             c = sp.linalg.factorized(M)
             self._c = c
-
-            # M = np.diff(np.eye(n), axis=0, n=1)
-            # r = 2 * weight / rho
-            # ab = np.zeros((2, n))
-            # A = np.eye(n) + r * M.T.dot(M)
-            # for i in range(2):
-            #     ab[i] = np.pad(np.diag(A, k=i), (0, i))
-            # c = spl.cholesky_banded(ab, lower=True)
-            # self._c = c
-        return c(rho * v)
+        u = build_constraint_rhs(
+            len(v), self.period, self.vavg, self.first_val
+        )
+        if u is not None:
+            rhs = np.r_[rho * v, u]
+            out = c(rhs)
+            out = out[:len(v)]
+        else:
+            rhs = rho * v
+            out = c(rhs)
+        return out

@@ -14,6 +14,10 @@ import cvxpy as cvx
 from functools import partial
 from osd.components.component import Component
 from osd.utilities import compose
+from osd.components.quadlin_utilities import (
+    build_constraint_matrix,
+    build_constraint_rhs
+)
 
 class SmoothSecondDifference(Component):
 
@@ -48,17 +52,26 @@ class SmoothSecondDifference(Component):
             D = m1 - 2 * m2 + m3
             P = 2 * D.T.dot(D) * weight
             M = P + rho * sp.identity(P.shape[0])
+            # Build constraints matrix
+            A = build_constraint_matrix(
+                n, self.period, self.vavg, self.first_val
+            )
+            if A is not None:
+                M = sp.bmat([
+                    [M, A.T],
+                    [A, None]
+                ])
             M = M.tocsc()
             c = sp.linalg.factorized(M)
             self._c = c
-            # M = np.diff(np.eye(n), axis=0, n=2)
-            # r = 2 * weight / rho
-            # ab = np.zeros((3, n))
-            # A = np.eye(n) + r * M.T.dot(M)
-            # for i in range(3):
-            #     ab[i] = np.pad(np.diag(A, k=i), (0, i))
-            # c = spl.cholesky_banded(ab, lower=True)
-            # self._c = c
-            # self._last_weight = weight
-            # self._last_rho = rho
-        return c(rho * v)
+        u = build_constraint_rhs(
+            len(v), self.period, self.vavg, self.first_val
+        )
+        if u is not None:
+            rhs = np.r_[rho * v, u]
+            out = c(rhs)
+            out = out[:len(v)]
+        else:
+            rhs = rho * v
+            out = c(rhs)
+        return out
