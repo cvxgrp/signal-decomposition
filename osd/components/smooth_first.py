@@ -8,6 +8,7 @@ Author: Bennet Meyers
 '''
 
 import scipy.linalg as spl
+import scipy.sparse as sp
 import numpy as np
 import cvxpy as cvx
 from functools import partial
@@ -39,12 +40,21 @@ class SmoothFirstDifference(Component):
         cond3 = self._last_rho != rho
         if cond1 or cond2 or cond3:
             n = len(v)
-            M = np.diff(np.eye(n), axis=0, n=1)
-            r = 2 * weight / rho
-            ab = np.zeros((2, n))
-            A = np.eye(n) + r * M.T.dot(M)
-            for i in range(2):
-                ab[i] = np.pad(np.diag(A, k=i), (0, i))
-            c = spl.cholesky_banded(ab, lower=True)
+            m1 = sp.eye(m=n-1, n=n, k=0)
+            m2 = sp.eye(m=n-1, n=n, k=1)
+            D = m2 - m1
+            P = 2 * D.T.dot(D) * weight
+            M = P + rho * sp.identity(P.shape[0])
+            M = M.tocsc()
+            c = sp.linalg.factorized(M)
             self._c = c
-        return spl.cho_solve_banded((c, True), v)
+
+            # M = np.diff(np.eye(n), axis=0, n=1)
+            # r = 2 * weight / rho
+            # ab = np.zeros((2, n))
+            # A = np.eye(n) + r * M.T.dot(M)
+            # for i in range(2):
+            #     ab[i] = np.pad(np.diag(A, k=i), (0, i))
+            # c = spl.cholesky_banded(ab, lower=True)
+            # self._c = c
+        return c(rho * v)

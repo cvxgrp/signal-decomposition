@@ -8,6 +8,7 @@ Author: Bennet Meyers
 '''
 
 import scipy.linalg as spl
+import scipy.sparse as sp
 import numpy as np
 import cvxpy as cvx
 from functools import partial
@@ -41,14 +42,23 @@ class SmoothSecondDifference(Component):
         cond3 = self._last_rho != rho
         if cond1 or cond2 or cond3:
             n = len(v)
-            M = np.diff(np.eye(n), axis=0, n=2)
-            r = 2 * weight / rho
-            ab = np.zeros((3, n))
-            A = np.eye(n) + r * M.T.dot(M)
-            for i in range(3):
-                ab[i] = np.pad(np.diag(A, k=i), (0, i))
-            c = spl.cholesky_banded(ab, lower=True)
+            m1 = sp.eye(m=n-2, n=n, k=0)
+            m2 = sp.eye(m=n-2, n=n, k=1)
+            m3 = sp.eye(m=n-2, n=n, k=2)
+            D = m1 - 2 * m2 + m3
+            P = 2 * D.T.dot(D) * weight
+            M = P + rho * sp.identity(P.shape[0])
+            M = M.tocsc()
+            c = sp.linalg.factorized(M)
             self._c = c
-            self._last_weight = weight
-            self._last_rho = rho
-        return spl.cho_solve_banded((c, True), v)
+            # M = np.diff(np.eye(n), axis=0, n=2)
+            # r = 2 * weight / rho
+            # ab = np.zeros((3, n))
+            # A = np.eye(n) + r * M.T.dot(M)
+            # for i in range(3):
+            #     ab[i] = np.pad(np.diag(A, k=i), (0, i))
+            # c = spl.cholesky_banded(ab, lower=True)
+            # self._c = c
+            # self._last_weight = weight
+            # self._last_rho = rho
+        return c(rho * v)
