@@ -7,7 +7,6 @@ first-order differences
 Author: Bennet Meyers
 '''
 
-import scipy.linalg as spl
 import scipy.sparse as sp
 import numpy as np
 import cvxpy as cvx
