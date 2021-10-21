@@ -24,6 +24,7 @@ class SmoothFirstDifference(Component):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self._c = None
+        self._u = None
         self._last_weight = None
         self._last_rho = None
         return
@@ -39,6 +40,7 @@ class SmoothFirstDifference(Component):
 
     def prox_op(self, v, weight, rho):
         c = self._c
+        u = self._u
         cond1 = c is None
         cond2 = self._last_weight != weight
         cond3 = self._last_rho != rho
@@ -61,9 +63,10 @@ class SmoothFirstDifference(Component):
             M = M.tocsc()
             c = sp.linalg.factorized(M)
             self._c = c
-        u = build_constraint_rhs(
-            len(v), self.period, self.vavg, self.first_val
-        )
+            u = build_constraint_rhs(
+                len(v), self.period, self.vavg, self.first_val
+            )
+            self._u = u
         if u is not None:
             rhs = np.r_[rho * v, u]
             out = c(rhs)
