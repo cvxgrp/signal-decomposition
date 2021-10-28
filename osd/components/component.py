@@ -46,10 +46,11 @@ class Component(ABC):
     @abstractmethod
     def _get_cost(self):
         return NotImplementedError
-    #
-    # @abstractmethod
-    # def prox_op(self):
-    #     return NotImplementedError
+
+    @abstractmethod
+    def prox_op(self, v, weight, rho):
+        assert not hasattr(super(), 'prox_op')
+        return NotImplementedError
 
     @property
     def vmin(self):
@@ -101,8 +102,11 @@ class Component(ABC):
         if self.first_val is not None:
             c.append(x[0] == self.first_val)
         if self.internal_constraints is not None:
-            for ic in self.internal_constraints:
-                c.append(ic(x, T, K))
+            if isinstance(self.internal_constraints, list):
+                for ic in self.internal_constraints:
+                    c.append(ic(x, T, K))
+            else:
+                c.extend(self.internal_constraints(x, T, K))
         return c
 
     @property
