@@ -22,6 +22,7 @@ Author: Bennet Meyers
 '''
 
 import cvxpy as cvx
+import numpy as np
 from osd.components.component import Component
 from osd.utilities import compose
 
@@ -29,6 +30,7 @@ class AsymmetricNoise(Component):
 
     def __init__(self, tau=0.85, **kwargs):
         super().__init__(tau=tau, **kwargs)
+        self._tau  = tau
         return
 
     @property
@@ -44,3 +46,10 @@ class AsymmetricNoise(Component):
     def _get_params(self):
         tau = cvx.Parameter(nonneg=True)
         return {'tau': tau}
+
+    def prox_op(self, v, weight, rho):
+        kappa = weight / (2 * rho)
+        tau = self._tau
+        a = v + (weight / rho) * (0.5 - tau)
+        x = np.clip(a - kappa, 0, np.inf) - np.clip(-a - kappa, 0, np.inf)
+        return x
