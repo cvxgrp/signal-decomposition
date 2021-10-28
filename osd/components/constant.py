@@ -14,7 +14,7 @@ class Constant(Component):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self._internal_constraints = [
-            lambda x, T, K: cvx.diff(x, k=1) == 0
+            lambda x, T, p: cvx.diff(x, k=1) == 0
         ]
         return
 

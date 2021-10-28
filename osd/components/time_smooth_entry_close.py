@@ -17,10 +17,22 @@ import scipy.sparse as sp
 import numpy as np
 import cvxpy as cvx
 from osd.components import QuadLin
+from osd.components.quadlin_utilities import (
+    build_constraint_matrix,
+    build_constraint_rhs
+)
 
 class TimeSmoothEntryClose(QuadLin):
 
     def __init__(self, lambda1=1, lambda2=1, **kwargs):
+        self.is_constrained = False
+        for key in ['vavg', 'period', 'first_val']:
+            if key in kwargs.keys():
+                setattr(self, key + '_' +'T', kwargs[key])
+                del kwargs[key]
+                self.is_constrained = True
+            else:
+                setattr(self, key + '_' + 'T', None)
         P = None
         q = None
         r = None
@@ -28,6 +40,21 @@ class TimeSmoothEntryClose(QuadLin):
         g = None
         self.lambda1 = lambda1
         self.lambda2 = lambda2
+        if self.is_constrained:
+            self._internal_constraints = []
+            if self.vavg_T is not None:
+                self._internal_constraints.append(
+                    lambda x, T, p: cvx.sum(x, axis=0) / T == self.vavg_T
+                )
+            if self.period_T is not None:
+                per = self.period_T
+                self._internal_constraints.append(
+                    lambda x, T, p: x[per:, :] == x[:-per, :]
+                )
+            if self.first_val_T is not None:
+                self._internal_constraints.append(
+                    lambda x, T, p: x[0, :] == self.first_val_T
+                )
         super().__init__(P, q=q, r=r, F=F, g=g, **kwargs)
         return
 
@@ -56,9 +83,21 @@ class TimeSmoothEntryClose(QuadLin):
 
 
     def prox_op(self, v, weight, rho):
+        T, p = v.shape
         if self.P is None:
-            self.P = make_tsec_mat(v.shape[0], v.shape[1],
-                                   lambda1=self.lambda1, lambda2=self.lambda2)
+            self.P = make_tsec_mat(T, p, lambda1=self.lambda1,
+                                   lambda2=self.lambda2)
+        if self.is_constrained:
+            if self.F is None:
+                A = build_constraint_matrix(T, self.vavg_T, self.period_T,
+                                            self.first_val_T)
+                self.F = sp.bmat([
+                    [sp.block_diag([A] * p), None],
+                    [None, np.zeros((T, T))]
+                ])
+                u = build_constraint_rhs(T, self.vavg_T, self.period_T,
+                                            self.first_val_T)
+                self.g = np.r_[np.tile(u, p), np.zeros(T)]
         mu = np.average(v, axis=1)
         v_ravel = v.ravel(order='F')
         v_tilde = np.r_[v_ravel, mu]

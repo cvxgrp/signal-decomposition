@@ -17,9 +17,9 @@ class ApproxPeriodic(Component):
     def __init__(self, period, **kwargs):
         self._approx_period = period
         self._internal_constraints = [
-            lambda x, T, K: cvx.sum(x[:period]) == 0,
-            lambda x, T, K: cvx.sum(x[-period:]) == 0,
-            lambda x, T, K: cvx.sum(x) == 0
+            lambda x, T, p: cvx.sum(x[:period]) == 0,
+            lambda x, T, p: cvx.sum(x[-period:]) == 0,
+            lambda x, T, p: cvx.sum(x) == 0
         ]
         super().__init__(**kwargs)
         self._c = None

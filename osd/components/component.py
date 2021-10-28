@@ -86,7 +86,7 @@ class Component(ABC):
         else:
             return None
 
-    def make_constraints(self, x, T, K):
+    def make_constraints(self, x, T, p):
         c = []
         if self.vmin is not None:
             c.append(x >= self.vmin)
@@ -104,9 +104,9 @@ class Component(ABC):
         if self.internal_constraints is not None:
             if isinstance(self.internal_constraints, list):
                 for ic in self.internal_constraints:
-                    c.append(ic(x, T, K))
+                    c.append(ic(x, T, p))
             else:
-                c.extend(self.internal_constraints(x, T, K))
+                c.extend(self.internal_constraints(x, T, p))
         return c
 
     @property

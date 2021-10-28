@@ -260,7 +260,7 @@ class Problem():
         costs = [c.cost(x) for c, x in zip(self.components, xs)]
         costs = [weights[i] * cost for i, cost in enumerate(costs)]
         constraints = [
-            c.make_constraints(x, T, K) for c, x in zip(self.components, xs)
+            c.make_constraints(x, T, p) for c, x in zip(self.components, xs)
         ]
         constraints = list(chain.from_iterable(constraints))
         constraints.append(cvx.sum([x for x in xs], axis=0)[use_set]

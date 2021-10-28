@@ -17,7 +17,7 @@ class LinearTrend(Component):
         super().__init__(**kwargs)
         # self.z = cvx.Variable(2)
         self._internal_constraints = [
-            lambda x, T, K: cvx.diff(x, k=2) == 0
+            lambda x, T, p: cvx.diff(x, k=2) == 0
         ]
         return
 

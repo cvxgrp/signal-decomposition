@@ -38,7 +38,7 @@ class QuadLin(Component):
         self._last_rho = None
         if F is not None:
             self._internal_constraints = [
-                lambda x, T, K: F @ x == self.g
+                lambda x, T, p: F @ x == self.g
             ]
         return
 
@@ -83,7 +83,11 @@ class QuadLin(Component):
                     [A, None]
                 ])
             M = M.tocsc()
+            print('factorizing matrix of size ({} x {})'.format(
+                *M.shape
+            ))
             c = sp.linalg.factorized(M)
+            print('done factorizing!')
             u = build_constraint_rhs(
                 len(v), self.period, self.vavg, self.first_val
             )
