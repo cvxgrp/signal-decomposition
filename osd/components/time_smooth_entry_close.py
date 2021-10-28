@@ -44,7 +44,12 @@ class TimeSmoothEntryClose(QuadLin):
                                        lambda2=self.lambda2)
             P = self.P
             x_flat = x.flatten()
-            x_tilde = cvx.hstack([x_flat, cvx.Variable(T)])
+            mu = cvx.Variable(T)
+            if isinstance(x, np.ndarray):
+                mu.value = np.average(x, axis=1)
+            elif isinstance(x, cvx.Variable) and x.value is not None:
+                mu.value = np.average(x.value, axis=1)
+            x_tilde = cvx.hstack([x_flat, mu])
             cost = 0.5 * cvx.quad_form(x_tilde, P)
             return cost
         return costfunc
