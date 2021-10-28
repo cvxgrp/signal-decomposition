@@ -29,7 +29,7 @@ def build_constraint_rhs(T, period, vavg, first_val):
     if period is not None:
         u.append(np.zeros(T - period))
     if vavg is not None:
-        u.append([vavg])
+        u.append([vavg * T])
     if first_val is not None:
         u.append([first_val])
     if len(u) > 0:
