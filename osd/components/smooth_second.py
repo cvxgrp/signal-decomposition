@@ -46,6 +46,7 @@ class SmoothSecondDifference(Component):
         cond2 = self._last_weight != weight
         cond3 = self._last_rho != rho
         if cond1 or cond2 or cond3:
+            # print('factorizing the matrix...')
             n = len(v)
             m1 = sp.eye(m=n-2, n=n, k=0)
             m2 = sp.eye(m=n-2, n=n, k=1)
@@ -64,11 +65,13 @@ class SmoothSecondDifference(Component):
                 ])
             M = M.tocsc()
             c = sp.linalg.factorized(M)
-            self._c = c
             u = build_constraint_rhs(
                 len(v), self.period, self.vavg, self.first_val
             )
+            self._c = c
             self._u = u
+            self._last_weight = weight
+            self._last_rho = rho
         if u is not None:
             rhs = np.r_[rho * v, u]
             out = c(rhs)
@@ -76,4 +79,5 @@ class SmoothSecondDifference(Component):
         else:
             rhs = rho * v
             out = c(rhs)
+        super().prox_op(v, weight, rho)
         return out

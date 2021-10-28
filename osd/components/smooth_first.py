@@ -61,11 +61,13 @@ class SmoothFirstDifference(Component):
                 ])
             M = M.tocsc()
             c = sp.linalg.factorized(M)
-            self._c = c
             u = build_constraint_rhs(
                 len(v), self.period, self.vavg, self.first_val
             )
+            self._c = c
             self._u = u
+            self._last_weight = weight
+            self._last_rho = rho
         if u is not None:
             rhs = np.r_[rho * v, u]
             out = c(rhs)
