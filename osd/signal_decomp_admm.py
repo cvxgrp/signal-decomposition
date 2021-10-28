@@ -28,16 +28,26 @@ def run_admm(data, components, num_iter=50, rho=1., use_ix=None, verbose=True,
     :return:
     """
     y = data
-    T = len(data)
+    if len(data.shape) == 1:
+        T = len(data)
+        p = 1
+    else:
+        T, p = data.shape
     K = len(components)
     if use_ix is None:
         use_ix = np.ones_like(data, dtype=bool)
     if X_init is None:
-        X = np.zeros((K, T))
+        if p == 1:
+            X = np.zeros((K, T))
+        else:
+            X = np.zeros((K, T, p))
         if not randomize_start:
             X[0, use_ix] = y[use_ix]
         else:
-            X[1:, :] = np.random.randn(K-1, T)
+            if p == 1:
+                X[1:, :] = np.random.randn(K-1, T)
+            else:
+                X[1:, :] = np.random.randn(K - 1, T, p)
             X[0, use_ix] = y[use_ix] - np.sum(X[1:, use_ix], axis=0)
     elif X_init.shape == (K, T):
         X = np.copy(X_init)
