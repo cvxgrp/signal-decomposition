@@ -15,3 +15,4 @@ from osd.components.norm1_fourth import SparseFourthDiffConvex
 from osd.components.one_jump import OneJump
 from osd.components.constant import Constant, ConstantChunks
 from osd.components.quad_lin import QuadLin
+from osd.components.time_smooth_entry_close import TimeSmoothEntryClose

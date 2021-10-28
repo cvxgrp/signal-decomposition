@@ -28,7 +28,7 @@ class QuadLin(Component):
         self.q = q
         self.r = r
         self.F = F
-        if g is None:
+        if g is None and F is not None:
             self.g = np.zeros(F.shape[0])
         else:
             self.g = g
