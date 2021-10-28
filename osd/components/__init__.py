@@ -13,3 +13,5 @@ from osd.components.linear_trend import LinearTrend
 from osd.components.approx_periodic import ApproxPeriodic
 from osd.components.norm1_fourth import SparseFourthDiffConvex
 from osd.components.one_jump import OneJump
+from osd.components.constant import Constant, ConstantChunks
+from osd.components.quad_lin import QuadLin
