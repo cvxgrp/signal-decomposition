@@ -18,11 +18,11 @@ import numpy as np
 from osd.components.component import Component
 
 class OneJump(Component):
-    def __init__(self, start_value=None, end_value=None, min_fraction=None,
+    def __init__(self, start_val=None, end_val=None, min_fraction=None,
                  **kwargs):
         super().__init__(**kwargs)
-        self.start_value = start_value
-        self.end_value = end_value # TODO: add this to prox op
+        self.start_val = start_val
+        self.end_val = end_val # TODO: add this to prox op
         self.min_fraction = min_fraction
         return
 
@@ -35,21 +35,22 @@ class OneJump(Component):
         return f
 
     def prox_op(self, v, weight, rho):
-        if self.start_value is None:
+        # print(self.start_val)
+        if self.start_val is None:
             mu = np.average(v)
         else:
-            mu = self.start_value
+            mu = self.start_val
         cost_no_jump = (rho / 2) * np.sum(np.power(v - mu, 2))
         results, best_ix = find_jump(v, min_fraction=self.min_fraction)
         x_jump = np.ones_like(v)
-        if self.start_value is None:
+        if self.start_val is None:
             x_jump[:best_ix] = results.loc[best_ix]['mu1']
         else:
-            x_jump[:best_ix] = start
+            x_jump[:best_ix] = self.start_val
         x_jump[best_ix:] = results.loc[best_ix]['mu2']
         cost_with_jump = weight + (rho / 2) * np.sum(np.power(v - x_jump, 2))
-        if cost_with_jump < cost_no_jump:
-            # print('jump!')
+        if cost_with_jump < cost_no_jump and best_ix != 0:
+            # print('jump!', best_ix)
             return x_jump
         else:
             # print('no jump!')
@@ -87,6 +88,7 @@ def find_jump(signal, min_fraction=None):
         'mu1': mu_left, 'var1': var_left, 'mu2': mu_right, 'var2': var_right
     })
     results['total_var'] = results['var1'] + results['var2']
+    results['fraction'] = np.min([denoms, N - denoms], axis=0) / N
     if min_fraction is None:
         best_ix = np.argmin(results['total_var'])
     else:
