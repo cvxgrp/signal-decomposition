@@ -244,12 +244,19 @@ class Problem():
         if use_set is None:
             use_set = self.known_set
         self.use_set = use_set
+        if len(self.data.shape) == 1:
+            p = 1
+        else:
+            p = self.data.shape[1]
         y_tilde = np.copy(self.data)
         y_tilde[np.isnan(y_tilde)] = 0
         T = self.T
         K = self.num_components
         weights = self.__weights
-        xs = [cvx.Variable(T, name='x_{}'.format(i)) for i in range(K)]
+        if p == 1:
+            xs = [cvx.Variable(T, name='x_{}'.format(i)) for i in range(K)]
+        else:
+            xs = [cvx.Variable((T, p), name='x_{}'.format(i)) for i in range(K)]
         costs = [c.cost(x) for c, x in zip(self.components, xs)]
         costs = [weights[i] * cost for i, cost in enumerate(costs)]
         constraints = [
