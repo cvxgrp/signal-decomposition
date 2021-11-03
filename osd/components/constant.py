@@ -61,6 +61,7 @@ class ConstantChunks(Component):
         out = np.tile(avgs, (nrows, True))
         out = out.ravel(order='F')
         out = out[:len(v)]
+        # return np.clip(out, -np.inf, 0)
         return out
 
 def make_constraints(x, T, K, length=None):
@@ -68,6 +69,6 @@ def make_constraints(x, T, K, length=None):
     if T % length != 0:
         num_chunks += 1
     constraints = []
-    for i in num_chunks:
+    for i in range(num_chunks):
         constraints.append(cvx.diff(x[i*length:(i+1)*length], k=1) == 0)
     return constraints

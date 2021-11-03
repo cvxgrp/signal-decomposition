@@ -77,7 +77,7 @@ class Problem():
                   stop_early=False, stopping_tolerance=1e-5,
                   **cvx_kwargs):
         if rho is None:
-            rho = 2 / self.data.size
+            rho = 2 / (self.data.size * self.components[0].weight)
         num_iter = int(num_iter)
         if use_set is None:
             use_set = self.known_set
@@ -95,6 +95,7 @@ class Problem():
                 cvx_kwargs['warm_start'] = True
                 for ix, x in enumerate(problem.variables()):
                     x.value = X_init[ix, :]
+            # print(self.problem.is_dcp())
             problem.solve(**cvx_kwargs)
             sorted_order = np.argsort([v.name() for v in problem.variables()])
             ests = np.array([x.value for x in
@@ -259,6 +260,10 @@ class Problem():
             xs = [cvx.Variable((T, p), name='x_{}'.format(i)) for i in range(K)]
         costs = [c.cost(x) for c, x in zip(self.components, xs)]
         costs = [weights[i] * cost for i, cost in enumerate(costs)]
+        # print([c.is_dcp() for c in costs])
+        # print([c.sign for c in costs])
+        # print([c.curvature for c in costs])
+        # print(cvx.sum(costs).is_dcp())
         constraints = [
             c.make_constraints(x, T, p) for c, x in zip(self.components, xs)
         ]
@@ -267,4 +272,5 @@ class Problem():
                            == y_tilde[use_set])
         objective = cvx.Minimize(cvx.sum(costs))
         problem = cvx.Problem(objective, constraints)
+        # print(problem.is_dcp())
         return problem

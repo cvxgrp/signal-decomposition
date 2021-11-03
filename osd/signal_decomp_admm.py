@@ -49,7 +49,9 @@ def run_admm(data, components, num_iter=50, rho=1., use_ix=None, verbose=True,
             else:
                 X[1:, :] = np.random.randn(K - 1, T, p)
             X[0, use_ix] = y[use_ix] - np.sum(X[1:, use_ix], axis=0)
-    elif X_init.shape == (K, T):
+    elif p == 1 and X_init.shape == (K, T):
+        X = np.copy(X_init)
+    elif p > 1 and X_init.shape == (K, T, p):
         X = np.copy(X_init)
     else:
         m1 = 'A initial value was given for X that does not match the problem shape.'
@@ -89,8 +91,11 @@ def run_admm(data, components, num_iter=50, rho=1., use_ix=None, verbose=True,
         # calculate primal and dual residuals
         primal_resid = np.sum(X, axis=0)[use_ix] - y[use_ix]
         X_tilde = make_estimate(y, X, use_ix, residual_term=residual_term)
-        dual_resid = gradients - X_tilde[0] * 2 / y.size
-        n_s_k = np.linalg.norm(dual_resid) / np.sqrt(dual_resid.size)
+        dual_resid = gradients[1:] - X_tilde[0] * 2 / (components[0].size *
+                                                       components[0].weight)
+        dual_resid = dual_resid[:, use_ix]
+        # n_s_k = np.linalg.norm(dual_resid) / np.sqrt(dual_resid.size)
+        n_s_k = np.sum(np.power(dual_resid, 2)) / (K - 1)
         norm_dual_residual.append(n_s_k)
         obj_val = calc_obj(y, X, components, use_ix,
                            residual_term=residual_term)

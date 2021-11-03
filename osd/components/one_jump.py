@@ -19,11 +19,13 @@ from osd.components.component import Component
 
 class OneJump(Component):
     def __init__(self, start_val=None, end_val=None, min_fraction=None,
-                 **kwargs):
+                 down_only=False, up_only=False, **kwargs):
         super().__init__(**kwargs)
         self.start_val = start_val
         self.end_val = end_val # TODO: add this to prox op
         self.min_fraction = min_fraction
+        self.down_only = down_only
+        self.up_only = up_only
         return
 
     @property
@@ -49,6 +51,10 @@ class OneJump(Component):
             x_jump[:best_ix] = self.start_val
         x_jump[best_ix:] = results.loc[best_ix]['mu2']
         cost_with_jump = weight + (rho / 2) * np.sum(np.power(v - x_jump, 2))
+        if self.down_only and x_jump[-1] > x_jump[0]:
+            cost_with_jump = np.inf
+        if self.up_only and x_jump[-1] < x_jump[0]:
+            cost_with_jump = np.inf
         if cost_with_jump < cost_no_jump and best_ix != 0:
             # print('jump!', best_ix)
             return x_jump

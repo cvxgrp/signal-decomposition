@@ -42,8 +42,11 @@ def run_bcd(data, components, num_iter=50, use_ix=None, X_init=None,
             X[0, :] = X0_next
             X[k, :] = Xk_next
         gradients[0] = X[0] * 2 / y.size
-        dual_resid = gradients - X[0] * 2 / y.size
-        n_s_k = np.linalg.norm(dual_resid) / np.sqrt(dual_resid.size)
+        dual_resid = gradients[1:] - X[0] * 2 / (components[0].size *
+                                             components[0].weight)
+        dual_resid = dual_resid[:, use_ix]
+        # n_s_k = np.linalg.norm(dual_resid) / np.sqrt(dual_resid.size)
+        n_s_k = np.sum(np.power(dual_resid, 2)) / (K - 1)
         obj.append(calc_obj(y, X, components, use_ix,
                                 residual_term=0))
         norm_dual_residual.append(n_s_k)

@@ -78,13 +78,15 @@ class QuadLin(Component):
             elif A is None and self.F is not None:
                 A = sp.csc_matrix(self.F)
             if A is not None:
+                # print(M.shape, A.shape)
                 M = sp.bmat([
                     [M, A.T],
                     [A, None]
                 ])
             M = M.tocsc()
-            print('factorizing matrix of size ({} x {})'.format(
-                *M.shape
+            # print(M.shape)
+            print('factorizing matrix of size ({} x {}) with {} nnz'.format(
+                *M.shape, M.nnz
             ))
             c = sp.linalg.factorized(M)
             print('done factorizing!')
@@ -105,6 +107,7 @@ class QuadLin(Component):
             upper = rho * v - weight * self.q
         if u is not None:
             rhs = np.r_[upper, u]
+            # print(rhs.shape)
             out = c(rhs)
             out = out[:len(v)]
         else:
