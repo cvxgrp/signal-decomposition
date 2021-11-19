@@ -83,6 +83,7 @@ def run_admm(data, components, num_iter=50, rho=1., use_ix=None, verbose=True,
         for k in range(K):
             prox = components[k].prox_op
             weight = components[k].weight
+            # print(X[k, :], u)
             x_new = prox(X[k, :] - u, weight, rh)
             gradients[k, :] = rh * (X[k, :] - u - x_new)
             X[k, :] = x_new
@@ -95,7 +96,8 @@ def run_admm(data, components, num_iter=50, rho=1., use_ix=None, verbose=True,
                                                        components[0].weight)
         dual_resid = dual_resid[:, use_ix]
         # n_s_k = np.linalg.norm(dual_resid) / np.sqrt(dual_resid.size)
-        n_s_k = np.sum(np.power(dual_resid, 2)) / (K - 1)
+        # n_s_k = np.sum(np.power(dual_resid, 2)) / (K - 1)
+        n_s_k = np.linalg.norm(dual_resid) / np.sqrt(K - 1)
         norm_dual_residual.append(n_s_k)
         obj_val = calc_obj(y, X, components, use_ix,
                            residual_term=residual_term)

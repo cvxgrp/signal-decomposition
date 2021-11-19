@@ -40,6 +40,7 @@ class SmoothFirstDifference(Component):
     def prox_op(self, v, weight, rho):
         c = self._c
         u = self._u
+        # print(np.sum(np.isnan(v)))
         cond1 = c is None
         cond2 = self._last_weight != weight
         cond3 = self._last_rho != rho
@@ -75,4 +76,5 @@ class SmoothFirstDifference(Component):
         else:
             rhs = rho * v
             out = c(rhs)
+        # print('returning', out)
         return out

@@ -13,12 +13,18 @@ def run_bcd(data, components, num_iter=50, use_ix=None, X_init=None,
     if use_ix is None:
         use_ix = np.ones_like(data, dtype=bool)
     y = data
-    T = len(data)
+    if len(data.shape) == 1:
+        T = len(data)
+        p = 1
+    else:
+        T, p = data.shape
     K = len(components)
-    rho = 2 / T
-    use_ix = np.ones_like(y, dtype=bool)
+    rho = 2 / T / p
     if X_init is None:
-        X = np.zeros((K, T))
+        if p == 1:
+            X = np.zeros((K, T))
+        else:
+            X = np.zeros((K, T, p))
         X[0, use_ix] = y[use_ix]
     else:
         X = np.copy(X_init)
@@ -46,7 +52,8 @@ def run_bcd(data, components, num_iter=50, use_ix=None, X_init=None,
                                              components[0].weight)
         dual_resid = dual_resid[:, use_ix]
         # n_s_k = np.linalg.norm(dual_resid) / np.sqrt(dual_resid.size)
-        n_s_k = np.sum(np.power(dual_resid, 2)) / (K - 1)
+        # n_s_k = np.sum(np.power(dual_resid, 2)) / (K - 1)
+        n_s_k = np.linalg.norm(dual_resid) / np.sqrt(K - 1)
         obj.append(calc_obj(y, X, components, use_ix,
                                 residual_term=0))
         norm_dual_residual.append(n_s_k)

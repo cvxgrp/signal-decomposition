@@ -15,17 +15,22 @@ Author: Bennet Meyers
 
 import pandas as pd
 import numpy as np
+import matplotlib.pyplot as plt
 from osd.components.component import Component
 
 class OneJump(Component):
     def __init__(self, start_val=None, end_val=None, min_fraction=None,
-                 down_only=False, up_only=False, **kwargs):
+                 down_only=False, up_only=False, use_set=None, **kwargs):
         super().__init__(**kwargs)
         self.start_val = start_val
         self.end_val = end_val # TODO: add this to prox op
         self.min_fraction = min_fraction
         self.down_only = down_only
         self.up_only = up_only
+        if use_set is not None and len(use_set.shape) > 1:
+            self.use_set = np.alltrue(use_set, axis=1)
+        else:
+            self.use_set = use_set
         return
 
     @property
@@ -37,39 +42,52 @@ class OneJump(Component):
         return f
 
     def prox_op(self, v, weight, rho):
-        # print(self.start_val)
-        if self.start_val is None:
-            mu = np.average(v)
+        if self.use_set is None:
+            u_s = np.ones_like(v, dtype=bool)
         else:
-            mu = self.start_val
-        cost_no_jump = (rho / 2) * np.sum(np.power(v - mu, 2))
-        results, best_ix = find_jump(v, min_fraction=self.min_fraction)
+            u_s = self.use_set
+        mu = np.average(v[u_s])
+        if self.start_val is None:
+            x_no_jump = mu * np.ones_like(v)
+        else:
+            x_no_jump = self.start_val * np.ones_like(v)
+        cost_no_jump = (rho / 2) * np.sum(
+            np.power(v[u_s] - x_no_jump[u_s], 2))
+        results, best_ix = find_jump(v, min_fraction=self.min_fraction,
+                                     use_set=self.use_set)
         x_jump = np.ones_like(v)
         if self.start_val is None:
             x_jump[:best_ix] = results.loc[best_ix]['mu1']
         else:
             x_jump[:best_ix] = self.start_val
         x_jump[best_ix:] = results.loc[best_ix]['mu2']
-        cost_with_jump = weight + (rho / 2) * np.sum(np.power(v - x_jump, 2))
+        # print(mu, results.loc[best_ix]['mu1'], results.loc[best_ix]['mu2'])
+        cost_with_jump = weight + (rho / 2) * np.sum(
+            np.power(v - x_jump, 2)[u_s])
         if self.down_only and x_jump[-1] > x_jump[0]:
             cost_with_jump = np.inf
         if self.up_only and x_jump[-1] < x_jump[0]:
             cost_with_jump = np.inf
+
+        # print(x_jump, x_no_jump, best_ix)
         if cost_with_jump < cost_no_jump and best_ix != 0:
-            # print('jump!', best_ix)
             return x_jump
         else:
-            # print('no jump!')
-            return mu * np.ones_like(v)
+            return x_no_jump
 
 
-def find_jump(signal, min_fraction=None):
+def find_jump(signal, min_fraction=None, use_set=None):
     """
     Find the breakpoint in a scalar signal that minimizes the total variance in
     both signal segments
     :param signal: a scalar signal (typically 1D numpy array)
     :return: dataframe with results of search and optimal breakpoint index (tuple)
     """
+    if use_set is not None:
+        new_index = np.arange(len(signal))
+        new_index = new_index[use_set]
+        new_index = np.r_[new_index, [np.max(new_index) + 1]]
+        signal = signal[use_set]
     N = len(signal)
     cum_sum_left = np.r_[[0], np.cumsum(signal)]
     cum_sum_right = np.r_[np.cumsum(signal[::-1])[::-1], [0]]
@@ -93,10 +111,12 @@ def find_jump(signal, min_fraction=None):
     results = pd.DataFrame(data={
         'mu1': mu_left, 'var1': var_left, 'mu2': mu_right, 'var2': var_right
     })
+    if use_set is not None:
+       results.index = new_index
     results['total_var'] = results['var1'] + results['var2']
     results['fraction'] = np.min([denoms, N - denoms], axis=0) / N
     if min_fraction is None:
-        best_ix = np.argmin(results['total_var'])
+        best_ix = results.index[np.argmin(results['total_var'])]
     else:
         view = results[results['fraction'] >= min_fraction]
         best_ix = view.index[np.argmin(view['total_var'].values)]

@@ -31,9 +31,13 @@ class Constant(Component):
         return avg
 
 class ConstantChunks(Component):
-    def __init__(self, length, **kwargs):
+    def __init__(self, length, use_set=None, **kwargs):
         super().__init__(**kwargs)
         self.length=length
+        if use_set is not None and len(use_set.shape) > 1:
+            self.use_set = np.alltrue(use_set, axis=1)
+        else:
+            self.use_set = use_set
         self._internal_constraints = partial(make_constraints,
                                              length=self.length)
         return
@@ -49,6 +53,8 @@ class ConstantChunks(Component):
     def prox_op(self, v, weight, rho):
         T = len(v)
         temp = v.copy()
+        if self.use_set is not None:
+            temp[self.use_set] = np.nan
         num_chunks = T // self.length
         if T % self.length != 0:
             num_chunks += 1

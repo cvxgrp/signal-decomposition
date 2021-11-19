@@ -22,7 +22,8 @@ from osd.components.quadlin_utilities import (
 
 class QuadLin(Component):
 
-    def __init__(self, P, q=None, r=None, F=None, g=None, **kwargs):
+    def __init__(self, P, q=None, r=None, F=None, g=None,
+                 prox_A=None, **kwargs):
         super().__init__(**kwargs)
         self.P = P
         self.q = q
@@ -32,6 +33,7 @@ class QuadLin(Component):
             self.g = np.zeros(F.shape[0])
         else:
             self.g = g
+        self.prox_A = prox_A
         self._c = None
         self._u = None
         self._last_weight = None
@@ -65,7 +67,11 @@ class QuadLin(Component):
         if cond1 or cond2 or cond3:
             # print('factorizing the matrix...')
             n = len(v)
-            M = weight * self.P + rho * sp.identity(self.P.shape[0])
+            if self.prox_A is None:
+                temp_mat = sp.identity(self.P.shape[0])
+            else:
+                temp_mat = self.prox_A.T @ self.prox_A
+            M = weight * self.P + rho * temp_mat
             # Build constraints matrix
             A = build_constraint_matrix(
                 n, self.period, self.vavg, self.first_val
@@ -101,10 +107,17 @@ class QuadLin(Component):
             self._u = u
             self._last_weight = weight
             self._last_rho = rho
-        if self.q is None:
-            upper = rho * v
+        if self.prox_A is None:
+            if self.q is None:
+                upper = rho * v
+            else:
+                upper = rho * v - weight * self.q
         else:
-            upper = rho * v - weight * self.q
+            temp_mat = self.prox_A.T
+            if self.q is None:
+                upper = rho * temp_mat @ v
+            else:
+                upper = rho * temp_mat @ v - weight * self.q
         if u is not None:
             rhs = np.r_[upper, u]
             # print(rhs.shape)

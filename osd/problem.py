@@ -156,44 +156,66 @@ class Problem():
         return holdout_cost.item() / len(residuals)
 
     def plot_decomposition(self, x_series=None, X_real=None, figsize=(10, 8),
-                           label='estimated'):
+                           label='estimated', exponentiate=False,
+                           skip=None):
         if self.estimates is None:
             print('No decomposition available.')
             return
+        if not exponentiate:
+            f = lambda x: x
+            base = '$x'
+        else:
+            f = lambda x: np.exp(x)
+            base = '$\\tilde{x}'
+        if skip is not None:
+            skip = np.atleast_1d(skip)
+            nd = len(skip)
+        else:
+            nd = 0
         K = len(self.components)
-        fig, ax = plt.subplots(nrows=K + 1, sharex=True, figsize=figsize)
+        fig, ax = plt.subplots(nrows=K + 1 - nd, sharex=True, figsize=figsize)
         if x_series is None:
             xs = np.arange(self.estimates.shape[1])
         else:
             xs = np.copy(x_series)
+        ax_ix = 0
         for k in range(K + 1):
+            if skip is not None and k in skip:
+                continue
             if k == 0:
                 est = self.estimates[k]
                 s = self.use_set
-                ax[k].plot(xs[s], est[s], label=label, linewidth=1)
-                ax[k].set_title('Component $x^{}$'.format(k + 1))
+                ax[ax_ix].plot(xs[s], f(est[s]), label=label, linewidth=1,
+                               ls='none', marker='.', ms=2)
+                ax[ax_ix].set_title(base + '^{}$'.format(k + 1) +
+                                    ' for the known set')
                 if X_real is not None:
                     true = X_real[k]
-                    ax[k].plot(true, label='true', linewidth=1)
+                    ax[ax_ix].plot(true, label='true', linewidth=1)
             elif k < K:
                 est = self.estimates[k]
-                ax[k].plot(xs, est, label=label, linewidth=1)
-                ax[k].set_title('Component $x^{}$'.format(k + 1))
+                ax[ax_ix].plot(xs, f(est), label=label, linewidth=1)
+                ax[ax_ix].set_title(base + '^{}$'.format(k + 1))
                 if X_real is not None:
                     true = X_real[k]
-                    ax[k].plot(xs, true, label='true', linewidth=1)
+                    ax[ax_ix].plot(xs, true, label='true', linewidth=1)
             else:
-                ax[k].plot(xs, self.data, label='observed, $y$',
+                if not exponentiate:
+                    lbl = 'observed, $y$'
+                else:
+                    lbl = 'observed, $\\tilde{y}$'
+                ax[ax_ix].plot(xs, f(self.data), label=lbl,
                            linewidth=1, color='green')
-                ax[k].plot(xs, np.sum(self.estimates[1:], axis=0),
-                           label=label+' minus residual', linewidth=1)
+                ax[ax_ix].plot(xs, f(np.sum(self.estimates[1:], axis=0)),
+                           label='denoised estimate', linewidth=1)
                 if X_real is not None:
-                    ax[k].plot(xs, np.sum(X_real[1:], axis=0), label='true',
+                    ax[ax_ix].plot(xs, np.sum(X_real[1:], axis=0), label='true',
                                linewidth=1)
-                ax[k].set_title('Composed Signal')
-                ax[k].legend()
+                ax[ax_ix].set_title('composed signal')
+                ax[ax_ix].legend()
             if X_real is not None:
-                ax[k].legend()
+                ax[ax_ix].legend()
+            ax_ix += 1
         plt.tight_layout()
         return fig
 

@@ -19,12 +19,14 @@ import cvxpy as cvx
 from osd.components import QuadLin
 from osd.components.quadlin_utilities import (
     build_constraint_matrix,
-    build_constraint_rhs
+    build_constraint_rhs,
+    make_periodic_A
 )
 
 class TimeSmoothEntryClose(QuadLin):
 
-    def __init__(self, lambda1=1, lambda2=1, **kwargs):
+    def __init__(self, lambda1=1, lambda2=1, quasi_period=None, lambda_qp=1,
+                 **kwargs):
         self.is_constrained = False
         for key in ['vavg', 'period', 'first_val']:
             if key in kwargs.keys() and kwargs[key] is not None:
@@ -57,6 +59,8 @@ class TimeSmoothEntryClose(QuadLin):
                 )
         super().__init__(P, q=q, r=r, F=F, g=g, **kwargs)
         self.sqrt_P = None
+        self.quasi_period = quasi_period
+        self.lambda_qp = lambda_qp
         return
 
     @property
@@ -67,9 +71,16 @@ class TimeSmoothEntryClose(QuadLin):
         def costfunc(x):
             T, p = x.shape
             if self.sqrt_P is None:
-                self.P, self.sqrt_P = make_tsec_mat(T, p,
-                                       lambda1=self.lambda1,
-                                       lambda2=self.lambda2)
+                if self.quasi_period is None:
+                    self.P, self.sqrt_P = make_tsec_mat(T, p,
+                                           lambda1=self.lambda1,
+                                           lambda2=self.lambda2)
+                else:
+                    self.P, self.sqrt_P = make_quasiper_tsec_mat(
+                        T, p, self.quasi_period,
+                        lambda1 = self.lambda1, lambda2 = self.lambda2,
+                        lambda_qp=self.lambda_qp
+                    )
             # P = self.P
             M = self.sqrt_P
             x_flat = x.flatten()
@@ -90,8 +101,16 @@ class TimeSmoothEntryClose(QuadLin):
     def prox_op(self, v, weight, rho):
         T, p = v.shape
         if self.P is None:
-            self.P, self.sqrt_P = make_tsec_mat(T, p, lambda1=self.lambda1,
-                                   lambda2=self.lambda2)
+            if self.quasi_period is None:
+                self.P, self.sqrt_P = make_tsec_mat(T, p,
+                                                    lambda1=self.lambda1,
+                                                    lambda2=self.lambda2)
+            else:
+                self.P, self.sqrt_P = make_quasiper_tsec_mat(
+                    T, p, self.quasi_period,
+                    lambda1=self.lambda1, lambda2=self.lambda2,
+                    lambda_qp=self.lambda_qp
+                )
         if self.is_constrained:
             if self.F is None:
                 # print('making A')
@@ -156,7 +175,8 @@ class TimeSmoothPeriodicEntryClose(TimeSmoothEntryClose):
             z_tilde = cvx.hstack([z_flat, mu])
             # P_param = cvx.Parameter(P.shape, PSD=True, value=P)
             # cost = 0.5 * cvx.quad_form(x_tilde, P)
-            cost = 0.5 * cvx.sum_squares(np.sqrt(2) * M @ z_tilde)
+            s = (T + 1) / (q + 1) # TODO: check this!
+            cost = 0.5 * s * cvx.sum_squares(np.sqrt(2) * M @ z_tilde)
             # print(cost.sign, cost.curvature)
             return cost
         return costfunc
@@ -182,7 +202,19 @@ class TimeSmoothPeriodicEntryClose(TimeSmoothEntryClose):
         out = out[:v.shape[0]]
         return out
 
-
+# class TimeSmoothQuasiPeriodicEntryClose(TimeSmoothEntryClose):
+#     def __init__(self, period, lambda1=1, lambda2=1, circular=True, **kwargs):
+#         P = None
+#         # don't allow superclass to set any constraints
+#         for key in ['vavg', 'period', 'first_val']:
+#             if key in kwargs.keys() and kwargs[key] is not None:
+#                 setattr(self, key + '_' +'T', kwargs[key])
+#                 del kwargs[key]
+#         super().__init__(lambda1=lambda1, lambda2=lambda2, **kwargs)
+#         self.sqrt_P = None
+#         self.period_T = period
+#         self.circular = circular
+#         return
 
 def make_tsec_mat(T, p, lambda1=1, lambda2=1, circular=False):
     # upper left
@@ -218,6 +250,18 @@ def make_tsec_mat(T, p, lambda1=1, lambda2=1, circular=False):
     ])
     return 2 * M.T @ M, M
 
+def make_quasiper_tsec_mat(T, p, period, lambda1=1, lambda2=1,
+                           lambda_qp=1, circular=False):
+    _, upper_block = make_tsec_mat(T, p, lambda1=lambda1, lambda2=lambda2,
+                                circular=circular)
+    lower_block = lambda_qp * sp.block_diag([make_periodic_A(T, period)] * p)
+    zeros = sp.csr_matrix(([], ([], [])), shape=(
+        lower_block.shape[0], upper_block.shape[1] - lower_block.shape[1]
+    ))
+    lower_block = sp.hstack([lower_block, zeros])
+    # print(upper_block.shape, lower_block.shape)
+    mat = sp.vstack([upper_block, lower_block])
+    return 2 * mat.T * mat, mat
 
 def j_ix_LL(i, T, p):
     group = i // p
