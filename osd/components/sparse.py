@@ -56,41 +56,23 @@ class Sparse(Component):
             t1 = v - kappa
             t2 = -v - kappa
             x = np.clip(t1, 0, np.inf) - np.clip(t2, 0, np.inf)
-            return x
         else:
-            problem = self._prox_prob
-            ic = self.internal_scale
-            rol = rho / (weight * ic * self.chunk_size)
-            if problem is None:
-                P, q, A, l, u = make_all(v, self.chunk_size, rol)
-                problem = osqp.OSQP()
-                problem.setup(P=P, q=q, A=A, l=l, u=u, verbose=verbose,
-                              eps_abs=1e-4, eps_rel=1e-4)
-                self._rho_over_lambda = rol
-                self._prox_prob = problem
-            else:
-                l_new, u_new = make_lu(v, len(v), self.chunk_size)
-                problem.update(l=l_new, u=u_new)
-                eps = max(
-                    (self._it / 100) * 1e-3 + (1 - self._it / 100) * 1e-7,
-                    1e-9
-                )
-                if eps >= 1e-5:
-                    polish = True
-                else:
-                    polish = False
-                print('{:.2e}'.format(eps), polish)
-                problem.update_settings(eps_abs=eps, eps_rel=eps, polish=polish)
-                if ~np.isclose(rol, self._rho_over_lambda, atol=1e-3):
-                    P_new = make_P(len(v), self.chunk_size, rol)
-                    problem.update(Px=P_new)
-                    self._rho_over_lambda = rol
-            results = problem.solve()
-            self._it += 0
-            return results.x[:len(v)]
-            # return results
-            # num_chunks = (len(v) - 1) // self.chunk_size + 1
-            # return results.x[len(v)+num_chunks:2*len(v)+num_chunks]
+            cs = self.chunk_size
+            cn = (len(v) - 1) // cs + 1
+            remainder = len(v) % cs
+
+            v_bar = np.r_[v, np.nan * np.ones(cs - remainder)]
+            v_bar = np.nanmean(v_bar.reshape((cn, cs)), axis=1)
+
+            kappa = weight / rho * np.ones(cn)
+
+            t1 = v_bar - kappa
+            t2 = -v_bar - kappa
+
+            x = np.tile(np.clip(t1, 0, np.inf) - np.clip(t2, 0, np.inf),
+                        (cs, 1)).ravel(order='F')
+            x = x[:len(v)]
+        return x
 
 
 
