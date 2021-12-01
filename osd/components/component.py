@@ -93,12 +93,15 @@ class Component(ABC):
         if self.vmax is not None:
             c.append(x <= self.vmax)
         if self.vavg is not None:
-            n = x.size
-            c.append(cvx.sum(x) / n == self.vavg)
+            if self.period is None:
+                n = x.size
+                c.append(cvx.sum(x) / n == self.vavg)
+            else:
+                p = self.period
+                c.append(cvx.sum(x[:p]) / p == 0)
         if self.period is not None:
             p = self.period
             c.append(x[:-p] == x[p:])
-            c.append(cvx.sum(x[:p]) == 0)
         if self.first_val is not None:
             c.append(x[0] == self.first_val)
         if self.internal_constraints is not None:
