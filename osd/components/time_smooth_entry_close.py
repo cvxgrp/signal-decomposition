@@ -16,7 +16,7 @@ Author: Bennet Meyers
 import scipy.sparse as sp
 import numpy as np
 import cvxpy as cvx
-from osd.components import QuadLin
+from osd.components.quad_lin import QuadLin
 from osd.components.quadlin_utilities import (
     build_constraint_matrix,
     build_constraint_rhs,
