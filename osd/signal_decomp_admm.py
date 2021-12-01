@@ -78,8 +78,15 @@ def run_admm(data, components, num_iter=50, rho=1., use_ix=None, verbose=True,
     for it, rh in enumerate(rho):
         if verbose:
             td = time() - ti
-            progress(it, num_iter, '{:.2f} sec'.format(td))
+            if td < 60:
+                progress(it, num_iter, '{:.2f} sec   '.format(td))
+            else:
+                progress(it, num_iter, '{:.2f} min   '.format(td/60))
         # Apply proximal operators for each signal class
+        # if it == 20:
+        #     for k in range(K):
+        #         avgval = np.average(X[k, use_ix])
+        #         X[k, ~use_ix] = avgval
         for k in range(K):
             prox = components[k].prox_op
             weight = components[k].weight
@@ -122,7 +129,10 @@ def run_admm(data, components, num_iter=50, rho=1., use_ix=None, verbose=True,
         }
     if verbose:
         td = time() - ti
-        progress(num_iter, num_iter, '{:.2f} sec\n'.format(td))
+        if td < 60:
+            progress(num_iter, num_iter, '{:.2f} sec   '.format(td))
+        else:
+            progress(num_iter, num_iter, '{:.2f} min   '.format(td / 60))
     outdict = {
         'X': best['X'],
         'u': best['u'],
