@@ -29,5 +29,5 @@ class MeanSquareSmall(Component):
         r = 1 / (1 + a)
         out = r * np.asarray(v)
         if use_set is not None:
-            out[use_set] = 0
+            out[~use_set] = 0
         return out
