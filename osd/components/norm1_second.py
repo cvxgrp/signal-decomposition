@@ -23,6 +23,7 @@ from functools import partial
 import numpy as np
 from osd.components.component import Component
 from osd.utilities import compose
+from osd.masking import make_masked_identity_matrix
 
 class SparseSecondDiffConvex(Component):
 
@@ -43,32 +44,32 @@ class SparseSecondDiffConvex(Component):
         cost = compose(cvx.sum, cvx.abs, lambda x: self.internal_scale * x, diff2)
         return cost
 
-    def prox_op(self, vec_in, weight_val, rho_val,
-                verbose=False):
+    def prox_op(self, v, weight, rho, use_set=None, verbose=False, eps=1e-4):
+        vec_in, weight_val, rho_val = v, weight, rho
         # print(weight_val)
         problem = self._prox_prob
         ic = self.internal_scale
         rol = rho_val / (weight_val * ic)
         if problem is None:
-            P, q, A, l, u = make_all(vec_in, rol)
+            P, q, A, l, u = make_all(vec_in, rol, use_set=use_set)
             problem = osqp.OSQP()
             problem.setup(P=P, q=q, A=A, l=l, u=u, verbose=verbose,
-                          eps_rel=1e-4, eps_abs=1e-4)
+                          eps_rel=eps, eps_abs=eps, polish=True)
             self._rho_over_lambda = rol
             self._prox_prob = problem
         else:
             l_new, u_new = make_lu(vec_in, len(vec_in))
             problem.update(l=l_new, u=u_new)
-            eps = max(
-                (self._it / 100) * 1e-3 + (1 - self._it / 100) * 1e-7,
-                1e-9
-            )
-            if eps >= 1e-5:
-                polish = True
-            else:
-                polish = False
-            print('{:.2e}'.format(eps), polish)
-            problem.update_settings(eps_abs=eps, eps_rel=eps, polish=polish)
+            # eps = max(
+            #     (self._it / 100) * 1e-3 + (1 - self._it / 100) * 1e-7,
+            #     1e-9
+            # )
+            # if eps >= 1e-5:
+            #     polish = True
+            # else:
+            #     polish = False
+            # print('{:.2e}'.format(eps), polish)
+            # problem.update_settings(eps_abs=eps, eps_rel=eps, polish=polish)
             if ~np.isclose(rol, self._rho_over_lambda, atol=1e-3):
                 P_new = make_P(len(vec_in), rol)
                 problem.update(Px=P_new)
@@ -78,11 +79,14 @@ class SparseSecondDiffConvex(Component):
         return results.x[:len(vec_in)]
 
 
-def make_P(len_x, rho_over_lambda):
+def make_P(len_x, rho_over_lambda, use_set=None):
     len_r = len_x - 2
     len_z = len_x
     data = np.ones(len_z) * rho_over_lambda
     i = np.arange(len_z) + len_x + len_r
+    if use_set is not None:
+        data = data[use_set]
+        i = i[use_set]
     P = sp.coo_matrix((data, (i, i)), shape=2 * (len_x + len_r + len_z,))
     return P.tocsc()
 
@@ -93,7 +97,7 @@ def make_q(len_x):
     return np.r_[np.zeros(len_x), np.ones(len_r), np.zeros(len_z)]
 
 
-def make_A(len_x):
+def make_A(len_x, use_set=None):
     len_r = len_x - 2
     len_z = len_x
     # block 00
@@ -109,9 +113,15 @@ def make_A(len_x):
     # block 11
     B11 = sp.eye(len_r)
     # block 20
-    B20 = sp.eye(len_x)
+    if use_set is None:
+        B20 = sp.eye(len_x)
+    else:
+        B20 = make_masked_identity_matrix(use_set)
     # block 22
-    B22 = -1 * sp.eye(len_z)
+    if use_set is None:
+        B22 = -1 * sp.eye(len_z)
+    else:
+        B22 = -1 * make_masked_identity_matrix(use_set)
     A = sp.bmat([
         [B00, B01, None],
         [B10, B11, None],
@@ -128,10 +138,10 @@ def make_lu(v, len_x):
     return l, u
 
 
-def make_all(v, rho_over_lambda):
+def make_all(v, rho_over_lambda, use_set=None):
     len_x = len(v)
-    P = make_P(len_x, rho_over_lambda)
+    P = make_P(len_x, rho_over_lambda, use_set=use_set)
     q = make_q(len_x)
-    A = make_A(len_x)
+    A = make_A(len_x, use_set=use_set)
     l, u = make_lu(v, len_x)
     return P, q, A, l, u

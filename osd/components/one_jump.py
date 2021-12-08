@@ -41,7 +41,9 @@ class OneJump(Component):
         f = lambda x: 0 if x[-1] == x[0] else 1
         return f
 
-    def prox_op(self, v, weight, rho):
+    def prox_op(self, v, weight, rho, use_set=None):
+        if use_set is not None:
+            self.use_set = use_set
         if self.use_set is None:
             u_s = np.ones_like(v, dtype=bool)
         else:

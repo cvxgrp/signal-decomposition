@@ -26,8 +26,11 @@ class Constant(Component):
         cost = lambda x: 0
         return cost
 
-    def prox_op(self, v, weight, rho):
-        avg = np.average(v)
+    def prox_op(self, v, weight, rho, use_set=None):
+        if use_set is None:
+            avg = np.average(v)
+        else:
+            avg = np.average(v[use_set])
         return avg
 
 class ConstantChunks(Component):
@@ -50,7 +53,9 @@ class ConstantChunks(Component):
         cost = lambda x: 0
         return cost
 
-    def prox_op(self, v, weight, rho):
+    def prox_op(self, v, weight, rho, use_set=None):
+        if use_set is not None:
+            self.use_set = use_set
         T = len(v)
         temp = v.copy()
         if self.use_set is not None:

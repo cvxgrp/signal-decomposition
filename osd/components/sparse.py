@@ -19,6 +19,7 @@ import scipy.sparse as sp
 from osd.components.component import Component
 from osd.utilities import compose
 import numpy as np
+import warnings
 
 class Sparse(Component):
 
@@ -50,21 +51,43 @@ class Sparse(Component):
         cost = compose(cvx.sum, cvx.abs)
         return cost
 
-    def prox_op(self, v, weight, rho, verbose=False):
+    def prox_op(self, v, weight, rho, use_set=None):
         if self.chunk_size is None:
             kappa = weight / rho
             t1 = v - kappa
             t2 = -v - kappa
             x = np.clip(t1, 0, np.inf) - np.clip(t2, 0, np.inf)
+            if use_set is not None:
+                x[~use_set] = 0
         else:
             cs = self.chunk_size
             cn = (len(v) - 1) // cs + 1
             remainder = len(v) % cs
 
-            v_bar = np.r_[v, np.nan * np.ones(cs - remainder)]
-            v_bar = np.nanmean(v_bar.reshape((cn, cs)), axis=1)
+            if use_set is not None:
+                v_temp = np.copy(v)
+                v_temp[~use_set] = np.nan
+            else:
+                v_temp = v
 
-            kappa = weight / rho * np.ones(cn)
+            v_bar = np.r_[v_temp, np.nan * np.ones(cs - remainder)]
+            with warnings.catch_warnings():
+                warnings.simplefilter('ignore')
+                nan_counts = np.sum(np.isnan(v_bar.reshape((cn, cs))), axis=1)
+                v_bar = np.nanmean(v_bar.reshape((cn, cs)), axis=1)
+
+            if remainder > 0:
+                nan_counts[-1] -= cs - remainder
+
+            if np.any(np.isnan(v_bar)):
+                v_bar[np.isnan(v_bar)] = 0
+
+            kappa = np.zeros(cn)
+            kappa[nan_counts != cs] =(
+                weight / (rho * (1 - nan_counts[nan_counts != cs] / cs))
+            )
+
+            # kappa = weight / rho * np.ones(cn)
 
             t1 = v_bar - kappa
             t2 = -v_bar - kappa

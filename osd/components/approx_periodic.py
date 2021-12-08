@@ -5,7 +5,7 @@ This module contains the class for a signal that nearly repeats with period p
 
 Author: Bennet Meyers
 '''
-
+# TODO: convert this to quad-lin
 import scipy.linalg as spl
 import numpy as np
 import cvxpy as cvx

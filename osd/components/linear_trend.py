@@ -28,3 +28,16 @@ class LinearTrend(Component):
     def _get_cost(self):
         cost = lambda x: 0
         return cost
+
+    def prox_op(self, v, weight, rho, use_set=None):
+        T = len(v)
+        A = np.c_[np.ones(T), np.arange(T)]
+        if use_set is not None:
+            A_tilde = A[use_set, :]
+            v_tilde = v[use_set]
+        else:
+            A_tilde = A
+            v_tilde = v
+        x, _, _, _ = np.linalg.lstsq(A_tilde, v_tilde, rcond=None)
+        out = A @ x
+        return out

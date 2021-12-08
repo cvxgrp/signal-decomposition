@@ -40,7 +40,7 @@ class SmoothSecondDifference(QuadLin):
         cost = compose(cvx.sum_squares, cost)
         return cost
 
-    def prox_op(self, v, weight, rho):
+    def prox_op(self, v, weight, rho, use_set=None):
         n = len(v)
         if self.P is None:
             self.P = make_l2d2matrix(n)
@@ -51,7 +51,7 @@ class SmoothSecondDifference(QuadLin):
                 self.g = build_constraint_rhs(
                     len(v), self.period, self.vavg, self.first_val
                 )
-        vout = super().prox_op(v, weight, rho)
+        vout = super().prox_op(v, weight, rho, use_set=use_set)
         return vout
 
 class SmoothSecondDiffPeriodic(SmoothSecondDifference):
@@ -68,14 +68,19 @@ class SmoothSecondDiffPeriodic(SmoothSecondDifference):
         ]
         return
 
-    def prox_op(self, v, weight, rho):
+    def prox_op(self, v, weight, rho, use_set=None):
         n = len(v)
         q = self.period_T
         num_groups = n // q
+        if use_set is not None:
+            v_tilde = np.copy(v)
+            v_tilde[use_set] = np.nan
+        else:
+            v_tilde = v
         if n % q != 0:
             num_groups += 1
             num_new_rows = q - n % q
-            v_temp = np.r_[v, np.nan * np.ones(num_new_rows)]
+            v_temp = np.r_[v_tilde, np.nan * np.ones(num_new_rows)]
         else:
             v_temp = v
         v_wrapped = v_temp.reshape((num_groups, q))

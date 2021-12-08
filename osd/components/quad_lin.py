@@ -14,6 +14,11 @@ import numpy as np
 import cvxpy as cvx
 from functools import partial
 from osd.components.component import Component
+from osd.masking import (
+    make_masked_identity_matrix,
+    make_mask_matrix,
+    make_inverse_mask_matrix
+)
 from osd.utilities import compose
 from osd.components.quadlin_utilities import (
     build_constraint_matrix,
@@ -22,8 +27,7 @@ from osd.components.quadlin_utilities import (
 
 class QuadLin(Component):
 
-    def __init__(self, P, q=None, r=None, F=None, g=None,
-                 prox_A=None, **kwargs):
+    def __init__(self, P, q=None, r=None, F=None, g=None, **kwargs):
         super().__init__(**kwargs)
         self.P = P
         self.q = q
@@ -33,7 +37,9 @@ class QuadLin(Component):
             self.g = np.zeros(F.shape[0])
         else:
             self.g = g
-        self.prox_A = prox_A
+        self.prox_M = None
+        self.prox_MtM = None
+        self.prox_Mt = None
         self._c = None
         self._u = None
         self._last_weight = None
@@ -58,19 +64,23 @@ class QuadLin(Component):
             return cost
         return costfunc
 
-    def prox_op(self, v, weight, rho):
+    def prox_op(self, v, weight, rho, use_set=None):
         c = self._c
         u = self._u
+        if use_set is not None:
+            self.prox_M = make_mask_matrix(use_set)
+            self.prox_Mt = make_inverse_mask_matrix(use_set)
+            self.prox_MtM = make_masked_identity_matrix(use_set)
         cond1 = c is None
         cond2 = self._last_weight != weight
         cond3 = self._last_rho != rho
         if cond1 or cond2 or cond3:
             # print('factorizing the matrix...')
             n = len(v)
-            if self.prox_A is None:
+            if self.prox_MtM is None:
                 temp_mat = sp.identity(self.P.shape[0])
             else:
-                temp_mat = self.prox_A.T @ self.prox_A
+                temp_mat = self.prox_MtM
             M = weight * self.P + rho * temp_mat
             # Build constraints matrix
             # A = build_constraint_matrix(
@@ -110,17 +120,16 @@ class QuadLin(Component):
             self._u = u
             self._last_weight = weight
             self._last_rho = rho
-        if self.prox_A is None:
+        if use_set is None:
             if self.q is None:
                 upper = rho * v
             else:
                 upper = rho * v - weight * self.q
         else:
-            temp_mat = self.prox_A.T
             if self.q is None:
-                upper = rho * temp_mat @ v
+                upper = rho * self.prox_MtM @ v
             else:
-                upper = rho * temp_mat @ v - weight * self.q
+                upper = rho * self.prox_MtM @ v - weight * self.q
         if u is not None:
             rhs = np.r_[upper, u]
             # print(rhs.shape)
@@ -129,5 +138,5 @@ class QuadLin(Component):
         else:
             rhs = upper
             out = c(rhs)
-        super().prox_op(v, weight, rho)
+        super().prox_op(v, weight, rho, use_set=use_set)
         return out

@@ -16,6 +16,7 @@ Author: Bennet Meyers
 import scipy.sparse as sp
 import numpy as np
 import cvxpy as cvx
+import warnings
 from osd.components.quad_lin import QuadLin
 from osd.components.quadlin_utilities import (
     build_constraint_matrix,
@@ -98,7 +99,7 @@ class TimeSmoothEntryClose(QuadLin):
         return costfunc
 
 
-    def prox_op(self, v, weight, rho):
+    def prox_op(self, v, weight, rho, use_set=None):
         T, p = v.shape
         if self.P is None:
             if self.quasi_period is None:
@@ -131,9 +132,13 @@ class TimeSmoothEntryClose(QuadLin):
                 self.g = np.tile(u, p)
         mu = np.average(v, axis=1)
         v_ravel = v.ravel(order='F')
+        if use_set is not None:
+            use_ravel = use_set.ravel(order='F')
+        else:
+            use_ravel = None
         v_tilde = np.r_[v_ravel, mu]
         # print(self.P.shape, self.F.shape, self.g.shape, v_tilde.shape)
-        out_tilde = super().prox_op(v_tilde, weight, rho)
+        out_tilde = super().prox_op(v_tilde, weight, rho, use_set=use_ravel)
         out_ravel = out_tilde[:-len(mu)]
         out = out_ravel.reshape(v.shape, order='F')
         return out
@@ -181,7 +186,8 @@ class TimeSmoothPeriodicEntryClose(TimeSmoothEntryClose):
             return cost
         return costfunc
 
-    def prox_op(self, v, weight, rho):
+    def prox_op(self, v, weight, rho, use_set=None):
+        # todo: check this implementation of mprox
         q = self.period_T
         T, p = v.shape
         if self.P is None:
@@ -195,9 +201,17 @@ class TimeSmoothPeriodicEntryClose(TimeSmoothEntryClose):
             v_temp = np.r_[v, np.nan * np.ones((num_new_rows, p))]
         else:
             v_temp = v
+        if use_set is not None:
+            v_temp[use_set] = np.nan
         v_wrapped = v_temp.reshape((num_groups, q, p))
-        v_bar = np.nanmean(v_wrapped, axis=0)
-        out_bar = super().prox_op(v_bar, weight, rho)
+        with warnings.catch_warnings():
+            warnings.simplefilter('ignore')
+            v_bar = np.nanmean(v_wrapped, axis=0)
+        if use_set is not None:
+            use_bar = np.alltrue(use_set, axis=1)
+        else:
+            use_bar = None
+        out_bar = super().prox_op(v_bar, weight, rho, use_set=use_bar)
         out = np.tile(out_bar, (num_groups, 1))
         out = out[:v.shape[0]]
         return out

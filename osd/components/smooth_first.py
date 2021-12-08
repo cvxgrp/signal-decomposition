@@ -38,7 +38,7 @@ class SmoothFirstDifference(QuadLin):
         cost = compose(cvx.sum_squares, diff1)
         return cost
 
-    def prox_op(self, v, weight, rho):
+    def prox_op(self, v, weight, rho, use_set=None):
         n = len(v)
         if self.P is None:
             m1 = sp.eye(m=n - 1, n=n, k=0)
@@ -52,5 +52,5 @@ class SmoothFirstDifference(QuadLin):
                 self.g = build_constraint_rhs(
                     len(v), self.period, self.vavg, self.first_val
                 )
-        vout = super().prox_op(v, weight, rho)
+        vout = super().prox_op(v, weight, rho, use_set=use_set)
         return vout

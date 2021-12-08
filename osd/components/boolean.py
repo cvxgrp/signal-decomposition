@@ -24,11 +24,14 @@ class Boolean(Component):
     def _get_cost(self):
         return lambda x: 0
 
-    def prox_op(self, v, weight, rho):
+    def prox_op(self, v, weight, rho, use_set=None):
         low_val = self.shift
         high_val = self.scale + self.shift
         r_0 = np.abs(v - low_val)
         r_1 = np.abs(v - high_val)
         x = np.ones_like(v) * low_val
         x[r_1 <= r_0] = high_val
+        # deterministic behavior when there are missing values
+        if use_set is not None:
+            x[~use_set] = low_val
         return x

@@ -9,6 +9,7 @@ Author: Bennet Meyers
 
 import functools
 import sys
+import scipy.sparse as sp
 
 import numpy as np
 
@@ -86,3 +87,4 @@ def calc_obj(y, X, components, use_ix, residual_term=0):
         weight = components[k].weight
         obj_val += weight * cost
     return obj_val
+
