@@ -42,7 +42,7 @@ def run_bcd(data, components, num_iter=50, use_ix=None, X_init=None,
             prox = components[k].prox_op
             weight = components[k].weight
             #### Coordinate descent updates
-            Xk_next = prox(X[0, :] + X[k, :], weight, rho)
+            Xk_next = prox(X[0, :] + X[k, :], weight, rho, use_set=use_ix)
             X0_next[use_ix] = (X[0, :] + X[k, :] - Xk_next)[use_ix]
             gradients[k, :] = rho * (X[0, :] + X[k, :] - Xk_next)
             X[0, :] = X0_next
