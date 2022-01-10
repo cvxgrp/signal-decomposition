@@ -10,11 +10,12 @@ Author: Bennet Meyers
 import numpy as np
 from time import time
 from osd.utilities import progress, make_estimate, calc_obj
+import matplotlib.pyplot as plt
 
 
 def run_admm(data, components, num_iter=50, rho=1., use_ix=None, verbose=True,
              randomize_start=False, X_init=None, u_init=None, stop_early=False,
-             residual_term=0, stopping_tolerance=1e-6):
+             residual_term=0, stopping_tolerance=1e-6, debug=False):
     """
     Serial implementation of SD ADMM algorithm.
 
@@ -83,17 +84,20 @@ def run_admm(data, components, num_iter=50, rho=1., use_ix=None, verbose=True,
             else:
                 progress(it, num_iter, '{:.2f} min   '.format(td/60))
         # Apply proximal operators for each signal class
-        # if it == 20:
-        #     for k in range(K):
-        #         avgval = np.average(X[k, use_ix])
-        #         X[k, ~use_ix] = avgval
         for k in range(K):
             prox = components[k].prox_op
             weight = components[k].weight
             # print(X[k, :], u)
-            x_new = prox(X[k, :] - u, weight, rh)
+            x_new = prox(X[k, :] - u, weight, rh, use_set=None)
+            if debug:
+                plt.plot(X[k, :] - u, label='vin')
+                plt.plot(x_new, label='vout')
+                plt.legend()
+                plt.title('Comp {}, iteration {}'.format(k + 1, it + 1))
+                plt.show()
             gradients[k, :] = rh * (X[k, :] - u - x_new)
             X[k, :] = x_new
+
         # Consensus step
         u[use_ix] += 2 * (np.average(X[:, use_ix], axis=0) - y[use_ix] / K)
         # calculate primal and dual residuals
