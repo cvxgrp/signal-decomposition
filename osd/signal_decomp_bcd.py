@@ -43,7 +43,10 @@ def run_bcd(data, components, num_iter=50, use_ix=None, X_init=None,
     for it in range(num_iter):
         if verbose:
             td = time() - ti
-            progress(it, num_iter, '{:.2f} sec'.format(td))
+            if td < 60:
+                progress(it, num_iter, '{:.2f} sec   '.format(td))
+            else:
+                progress(it, num_iter, '{:.2f} min   '.format(td / 60))
         for k in range(1, K):
             prox = components[k].prox_op
             weight = components[k].weight
@@ -53,7 +56,7 @@ def run_bcd(data, components, num_iter=50, use_ix=None, X_init=None,
             vout = prox(vin, weight, rho, use_set=use_ix)
             gradients[k, :] = rho * mask_op.zero_fill(vin - vout)
             X[k, :] = vout
-            X = make_estimate(data, X, use_ix)
+        X = make_estimate(data, X, use_ix)
         gradients[0] = X[0] * 2 / y.size
         r = np.sqrt(
             (1 / (K - 1)) * np.sum(np.power(
