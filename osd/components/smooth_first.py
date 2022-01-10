@@ -7,20 +7,26 @@ first-order differences
 Author: Bennet Meyers
 '''
 
-import scipy.linalg as spl
+import scipy.sparse as sp
 import numpy as np
 import cvxpy as cvx
 from functools import partial
-from osd.components.component import Component
+from osd.components.quad_lin import QuadLin
 from osd.utilities import compose
+from osd.components.quadlin_utilities import (
+    build_constraint_matrix,
+    build_constraint_rhs
+)
 
-class SmoothFirstDifference(Component):
+class SmoothFirstDifference(QuadLin):
 
     def __init__(self, **kwargs):
-        super().__init__(**kwargs)
-        self._c = None
-        self._last_weight = None
-        self._last_rho = None
+        P = None
+        q = None
+        r = None
+        F = None
+        g = None
+        super().__init__(P, q=q, r=r, F=F, g=g, **kwargs)
         return
 
     @property
@@ -32,19 +38,19 @@ class SmoothFirstDifference(Component):
         cost = compose(cvx.sum_squares, diff1)
         return cost
 
-    def prox_op(self, v, weight, rho):
-        c = self._c
-        cond1 = c is None
-        cond2 = self._last_weight != weight
-        cond3 = self._last_rho != rho
-        if cond1 or cond2 or cond3:
-            n = len(v)
-            M = np.diff(np.eye(n), axis=0, n=1)
-            r = 2 * weight / rho
-            ab = np.zeros((2, n))
-            A = np.eye(n) + r * M.T.dot(M)
-            for i in range(2):
-                ab[i] = np.pad(np.diag(A, k=i), (0, i))
-            c = spl.cholesky_banded(ab, lower=True)
-            self._c = c
-        return spl.cho_solve_banded((c, True), v)
+    def prox_op(self, v, weight, rho, use_set=None):
+        n = len(v)
+        if self.P is None:
+            m1 = sp.eye(m=n - 1, n=n, k=0)
+            m2 = sp.eye(m=n - 1, n=n, k=1)
+            D = m2 - m1
+            self.P = 2 * D.T.dot(D)
+            self.F = build_constraint_matrix(
+                n, self.period, self.vavg, self.first_val
+            )
+            if self.F is not None:
+                self.g = build_constraint_rhs(
+                    len(v), self.period, self.vavg, self.first_val
+                )
+        vout = super().prox_op(v, weight, rho, use_set=use_set)
+        return vout

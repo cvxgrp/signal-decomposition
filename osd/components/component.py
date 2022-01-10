@@ -46,10 +46,11 @@ class Component(ABC):
     @abstractmethod
     def _get_cost(self):
         return NotImplementedError
-    #
-    # @abstractmethod
-    # def prox_op(self):
-    #     return NotImplementedError
+
+    @abstractmethod
+    def prox_op(self, v, weight, rho, use_set=None):
+        assert not hasattr(super(), 'prox_op')
+        return NotImplementedError
 
     @property
     def vmin(self):
@@ -75,6 +76,9 @@ class Component(ABC):
     def weight(self):
         return self._weight
 
+    def set_weight(self, weight):
+        self._weight = weight
+
     @property
     def internal_constraints(self):
         if hasattr(self, '_internal_constraints'):
@@ -82,24 +86,30 @@ class Component(ABC):
         else:
             return None
 
-    def make_constraints(self, x, T, K):
+    def make_constraints(self, x, T, p):
         c = []
         if self.vmin is not None:
             c.append(x >= self.vmin)
         if self.vmax is not None:
             c.append(x <= self.vmax)
         if self.vavg is not None:
-            n = x.size
-            c.append(cvx.sum(x) / n == self.vavg)
+            if self.period is None:
+                n = x.size
+                c.append(cvx.sum(x) / n == self.vavg)
+            else:
+                p = self.period
+                c.append(cvx.sum(x[:p]) / p == 0)
         if self.period is not None:
             p = self.period
             c.append(x[:-p] == x[p:])
-            c.append(cvx.sum(x[:p]) == 0)
         if self.first_val is not None:
             c.append(x[0] == self.first_val)
         if self.internal_constraints is not None:
-            for ic in self.internal_constraints:
-                c.append(ic(x, T, K))
+            if isinstance(self.internal_constraints, list):
+                for ic in self.internal_constraints:
+                    c.append(ic(x, T, p))
+            else:
+                c.extend(self.internal_constraints(x, T, p))
         return c
 
     @property

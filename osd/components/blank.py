@@ -23,5 +23,5 @@ class Blank(Component):
     def _get_cost(self):
         return lambda x: 0
 
-    def prox_op(self, v, weight, rho):
+    def prox_op(self, v, weight, rho, use_set=None):
         return v

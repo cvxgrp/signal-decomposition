@@ -13,15 +13,24 @@ https://link.springer.com/article/10.1007/s00477-005-0013-6
 Author: Bennet Meyers
 '''
 
-from scipy import sparse
+import scipy.sparse as sp
 import numpy as np
 from osd.components.component import Component
+from osd.masking import (
+    fill_forward,
+    fill_backward,
+    make_mask_matrix,
+    make_inverse_mask_matrix
+)
 
 class PiecewiseConstant(Component):
 
-    def __init__(self, num_segments=2, **kwargs):
+    def __init__(self, num_segments=2, fill='forward', **kwargs):
         super().__init__(**kwargs)
         self.num_segments = num_segments
+        self.fill = fill
+        self.prox_M = None
+        self.prox_Mt = None
         return
 
     @property
@@ -31,9 +40,22 @@ class PiecewiseConstant(Component):
     def _get_cost(self):
         return lambda x: 0
 
-    def prox_op(self, v, weight, rho):
-        d = error(v)
-        x = dp_seg(v, d, self.num_segments)
+    def prox_op(self, v, weight, rho, use_set=None):
+        if self.prox_M is None and use_set is not None:
+            self.prox_M = make_mask_matrix(use_set)
+            self.prox_Mt = make_inverse_mask_matrix(use_set)
+        elif self.prox_M is None and use_set is None:
+            self.prox_M = sp.eye(len(v))
+            self.prox_Mt = sp.eye(len(v))
+        v_temp = self.prox_M @ v
+        d = error(v_temp)
+        x_temp = dp_seg(v_temp, d, self.num_segments)
+        x = self.prox_Mt @ x_temp
+        if use_set is not None:
+            if self.fill == 'forward':
+                x = fill_forward(x, use_set)
+            elif self.fill == 'backward':
+                x = fill_backward(x, use_set)
         return x
 
 
@@ -47,7 +69,7 @@ def error(x):
     :return:  2D numpy array containing error matrix
     """
     T = len(x)
-    d = sparse.lil_matrix((T, T), dtype=np.float32)
+    d = sp.lil_matrix((T, T), dtype=np.float32)
     for a in range(T):
         A_top = np.cumsum(x[a:])
         A_bot = np.arange(1, T - a + 1)

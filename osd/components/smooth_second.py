@@ -7,20 +7,26 @@ second-order differences
 Author: Bennet Meyers
 '''
 
-import scipy.linalg as spl
+import scipy.sparse as sp
 import numpy as np
 import cvxpy as cvx
 from functools import partial
-from osd.components.component import Component
+from osd.components.quad_lin import QuadLin
 from osd.utilities import compose
+from osd.components.quadlin_utilities import (
+    build_constraint_matrix,
+    build_constraint_rhs
+)
 
-class SmoothSecondDifference(Component):
+class SmoothSecondDifference(QuadLin):
 
     def __init__(self, **kwargs):
-        super().__init__(**kwargs)
-        self._c = None
-        self._last_weight = None
-        self._last_rho = None
+        P = None
+        q = None
+        r = None
+        F = None
+        g = None
+        super().__init__(P, q=q, r=r, F=F, g=g, **kwargs)
         return
 
     @property
@@ -34,21 +40,79 @@ class SmoothSecondDifference(Component):
         cost = compose(cvx.sum_squares, cost)
         return cost
 
-    def prox_op(self, v, weight, rho):
-        c = self._c
-        cond1 = c is None
-        cond2 = self._last_weight != weight
-        cond3 = self._last_rho != rho
-        if cond1 or cond2 or cond3:
-            n = len(v)
-            M = np.diff(np.eye(n), axis=0, n=2)
-            r = 2 * weight / rho
-            ab = np.zeros((3, n))
-            A = np.eye(n) + r * M.T.dot(M)
-            for i in range(3):
-                ab[i] = np.pad(np.diag(A, k=i), (0, i))
-            c = spl.cholesky_banded(ab, lower=True)
-            self._c = c
-            self._last_weight = weight
-            self._last_rho = rho
-        return spl.cho_solve_banded((c, True), v)
+    def prox_op(self, v, weight, rho, use_set=None):
+        n = len(v)
+        if self.P is None:
+            self.P = make_l2d2matrix(n)
+            self.F = build_constraint_matrix(
+                n, self.period, self.vavg, self.first_val
+            )
+            if self.F is not None:
+                self.g = build_constraint_rhs(
+                    len(v), self.period, self.vavg, self.first_val
+                )
+        vout = super().prox_op(v, weight, rho, use_set=use_set)
+        return vout
+
+class SmoothSecondDiffPeriodic(SmoothSecondDifference):
+    def __init__(self, period, circular=True, **kwargs):
+        for key in ['vavg', 'period', 'first_val']:
+            if key in kwargs.keys() and kwargs[key] is not None:
+                setattr(self, key + '_' +'T', kwargs[key])
+                del kwargs[key]
+        super().__init__(**kwargs)
+        self.period_T = period
+        self.circular = circular
+        self._internal_constraints = [
+            lambda x, T, p: x[period:, :] == x[:-period, :]
+        ]
+        return
+
+    def prox_op(self, v, weight, rho, use_set=None):
+        n = len(v)
+        q = self.period_T
+        num_groups = n // q
+        if use_set is not None:
+            v_tilde = np.copy(v)
+            v_tilde[use_set] = np.nan
+        else:
+            v_tilde = v
+        if n % q != 0:
+            num_groups += 1
+            num_new_rows = q - n % q
+            v_temp = np.r_[v_tilde, np.nan * np.ones(num_new_rows)]
+        else:
+            v_temp = v
+        v_wrapped = v_temp.reshape((num_groups, q))
+        v_bar = np.nanmean(v_wrapped, axis=0)
+        if self.P is None:
+            self.P = make_l2d2matrix(q, circular=self.circular)
+            # full diff matrix is T-2, but circular diff matrix is q
+            self.P *= (1 - 2 / (q * num_groups))
+            self.F = build_constraint_matrix(
+                q, None, self.vavg, self.first_val
+            )
+            if self.F is not None:
+                self.g = build_constraint_rhs(
+                    q, None, self.vavg, self.first_val
+                )
+        out_bar = super().prox_op(v_bar, weight, rho)
+        out = np.tile(out_bar, num_groups)
+        out = out[:n]
+        return out
+
+
+def make_l2d2matrix(n, circular=False):
+    if not circular:
+        m1 = sp.eye(m=n - 2, n=n, k=0, format='csr')
+        m2 = sp.eye(m=n - 2, n=n, k=1, format='csr')
+        m3 = sp.eye(m=n - 2, n=n, k=2, format='csr')
+        D = m1 - 2 * m2 + m3
+    else:
+        m1 = sp.eye(m=n, n=n, k=0, format='csr')
+        m2 = sp.eye(m=n, n=n, k=1, format='csr')
+        m3 = sp.eye(m=n, n=n, k=2, format='csr')
+        m4 = sp.eye(m=n, n=n, k=1-n, format='csr')
+        m5 = sp.eye(m=n, n=n, k=2-n, format='csr')
+        D = (m1 - 2 * m2 + m3) - 2 * m4 + m5
+    return 2 * D.T.dot(D)

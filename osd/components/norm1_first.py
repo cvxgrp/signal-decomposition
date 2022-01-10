@@ -38,7 +38,9 @@ class SparseFirstDiffConvex(Component):
         cost = compose(cvx.sum, cvx.abs, diff1)
         return cost
 
-    def prox_op(self, vec_in, weight_val, rho_val):
+    def prox_op(self, v, weight, rho, use_set=None):
+        # TODO: convert this to OSQP with custom canonicalization
+        vec_in, weight_val, rho_val = v, weight, rho
         problem = self._prox_prob
         if problem is None:
             n = len(vec_in)
@@ -46,8 +48,12 @@ class SparseFirstDiffConvex(Component):
                                            name='weight_over_rho', pos=True)
             v = cvx.Parameter(n, value=vec_in, name='vec_in')
             x = cvx.Variable(n)
-            cost = weight_over_rho * 2 * cvx.norm1(
-                cvx.diff(x)) + cvx.sum_squares(x - v)
+            if use_set is None:
+                cost = (weight_over_rho * 2 * cvx.norm1(cvx.diff(x))
+                        + cvx.sum_squares(x - v))
+            else:
+                cost = (weight_over_rho * 2 * cvx.norm1(cvx.diff(x))
+                        + cvx.sum_squares(x[use_set] - v[use_set]))
             c = []
             if self.vmin is not None:
                 c.append(x >= self.vmin)
@@ -69,6 +75,6 @@ class SparseFirstDiffConvex(Component):
             if ~np.isclose(weight_val / rho_val,
                            parameters['weight_over_rho'].value,
                            atol=1e-3):
-                parameters['weight'].value = weight_val / rho_val
+                parameters['weight_over_rho'].value = weight_val / rho_val
         problem.solve(solver='MOSEK')
         return problem.variables()[0].value
