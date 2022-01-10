@@ -74,7 +74,7 @@ class Problem():
     def decompose(self, use_set=None, rho=None, how='admm',
                   num_iter=1e3, verbose=True, reset=False,
                   randomize_start=False, X_init=None, u_init=None,
-                  stop_early=False, stopping_tolerance=1e-5,
+                  stop_early=False, abs_tol=1e-5, rel_tol=1e-5,
                   **cvx_kwargs):
         if rho is None:
             rho = 2 / (self.data.size * self.components[0].weight)

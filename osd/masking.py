@@ -22,6 +22,7 @@ class Mask():
         self.q = np.sum(use_set)
         self.M = make_mask_matrix(use_set)
         self.M_star = make_inverse_mask_matrix(use_set)
+        self.MstM = make_masked_identity_matrix(use_set)
 
     def mask(self, v):
         if self.p == 1:
@@ -37,6 +38,18 @@ class Mask():
             T, p = self.T, self.p
             out = out.reshape((T, p), order='F')
         return out
+
+    def zero_fill(self, v):
+        if self.p == 1:
+            v = np.copy(v)
+        else:
+            v = v.ravel(order='F')
+        out = self.MstM @ v
+        if self.p != 1:
+            T, p = self.T, self.p
+            out = out.reshape((T, p), order='F')
+        return out
+
 
 def make_mask_matrix(use_set):
     if len(use_set.shape) == 1:
