@@ -64,13 +64,14 @@ class QuadLin(Component):
             return cost
         return costfunc
 
-    def prox_op(self, v, weight, rho, use_set=None):
+    def prox_op(self, v, weight, rho, use_set=None, prox_weights=None):
         c = self._c
         u = self._u
         if use_set is not None:
             self.prox_M = make_mask_matrix(use_set)
             self.prox_Mt = make_inverse_mask_matrix(use_set)
             self.prox_MtM = make_masked_identity_matrix(use_set)
+            # print(v.shape, use_set.shape, self.prox_MtM.shape)
         cond1 = c is None
         cond2 = self._last_weight != weight
         cond3 = self._last_rho != rho
@@ -81,6 +82,8 @@ class QuadLin(Component):
                 temp_mat = sp.identity(self.P.shape[0])
             else:
                 temp_mat = self.prox_MtM
+            if prox_weights is not None:
+                temp_mat.data *= prox_weights[prox_weights != 0]
             M = weight * self.P + rho * temp_mat
             # Build constraints matrix
             # A = build_constraint_matrix(
