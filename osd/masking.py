@@ -9,6 +9,35 @@ Author: Bennet Meyers
 import scipy.sparse as sp
 import numpy as np
 
+class Mask():
+    def __init__(self, use_set):
+        if len(use_set.shape) == 1:
+            p = 1
+            T = len(use_set)
+        else:
+            T, p, = use_set.shape
+        self.use_set = use_set
+        self.T = T
+        self.p = p
+        self.q = np.sum(use_set)
+        self.M = make_mask_matrix(use_set)
+        self.M_star = make_inverse_mask_matrix(use_set)
+        
+    def mask(self, v):
+        if self.p == 1:
+            v = np.copy(v)
+        else:
+            v = v.ravel(order='F')
+        out = self.M @ v
+        return out
+
+    def unmask(self, v):
+        out = self.M_star @ v
+        if self.p != 1:
+            T, p = self.T, self.p
+            out = out.reshape((T, p), order='F')
+        return out
+
 def make_mask_matrix(use_set):
     if len(use_set.shape) == 1:
         us = np.copy(use_set)
