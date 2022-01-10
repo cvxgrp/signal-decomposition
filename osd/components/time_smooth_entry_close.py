@@ -99,7 +99,7 @@ class TimeSmoothEntryClose(QuadLin):
         return costfunc
 
 
-    def prox_op(self, v, weight, rho, use_set=None):
+    def prox_op(self, v, weight, rho, use_set=None, prox_weights=None):
         T, p = v.shape
         if self.P is None:
             if self.quasi_period is None:
@@ -118,8 +118,10 @@ class TimeSmoothEntryClose(QuadLin):
                 A = build_constraint_matrix(T, self.period_T, self.vavg_T,
                                             self.first_val_T)
                 A = A.tocoo()
+                # print(A.shape, A.todense())
                 # print('block diag')
                 left_block = sp.block_diag([A] * p, format='coo')
+                # print(left_block.shape)
                 # print('making F')
                 data, i, j = left_block.data, left_block.row, left_block.col
                 self.F = sp.coo_matrix(
@@ -130,15 +132,30 @@ class TimeSmoothEntryClose(QuadLin):
                 u = build_constraint_rhs(T, self.period_T, self.vavg_T,
                                             self.first_val_T)
                 self.g = np.tile(u, p)
-        mu = np.average(v, axis=1)
+                # print(self.g)
+        with warnings.catch_warnings():
+            warnings.simplefilter('ignore')
+            mu = np.nanmean(v, axis=1)
+
         v_ravel = v.ravel(order='F')
         if use_set is not None:
             use_ravel = use_set.ravel(order='F')
+            # this helper variable should not be part of the prox distance penalty
+            extend = np.zeros_like(mu, dtype=bool)
+            use_ravel = np.r_[use_ravel, extend]
         else:
-            use_ravel = None
+            # this helper variable should not be part of the prox distance penalty
+            # note that for this class to truly be a subclass of the quad-lin
+            # class, the mprox interface must be used!
+            use_ravel = np.r_[np.ones_like(v_ravel, dtype=bool),
+                              np.zeros_like(mu, dtype=bool)]
         v_tilde = np.r_[v_ravel, mu]
-        # print(self.P.shape, self.F.shape, self.g.shape, v_tilde.shape)
-        out_tilde = super().prox_op(v_tilde, weight, rho, use_set=use_ravel)
+        # v_tilde[np.isnan(v_tilde)] = 0
+        if prox_weights is not None:
+            prox_weights = np.r_[prox_weights.ravel(order='F'),
+                                 np.zeros_like(mu)]
+        out_tilde = super().prox_op(v_tilde, weight, rho, use_set=use_ravel,
+                                    prox_weights=prox_weights)
         out_ravel = out_tilde[:-len(mu)]
         out = out_ravel.reshape(v.shape, order='F')
         return out
@@ -195,23 +212,36 @@ class TimeSmoothPeriodicEntryClose(TimeSmoothEntryClose):
                                                 lambda2=self.lambda2,
                                                 circular=self.circular)
         num_groups = T // q
+        use_temp = None
         if T % q != 0:
             num_groups += 1
             num_new_rows = q - T % q
             v_temp = np.r_[v, np.nan * np.ones((num_new_rows, p))]
+            if use_set is not None:
+                use_temp = np.r_[use_set, np.zeros((num_new_rows, p),
+                                                   dtype=bool)]
         else:
-            v_temp = v
-        if use_set is not None:
-            v_temp[use_set] = np.nan
+            v_temp = np.copy(v)
+            if use_set is not None:
+                use_temp = use_set
+        if use_temp is not None:
+            v_temp[~use_temp] = np.nan
         v_wrapped = v_temp.reshape((num_groups, q, p))
         with warnings.catch_warnings():
             warnings.simplefilter('ignore')
+            counts = np.sum(np.isnan(v_wrapped), axis=0)
+            scales = 1 - (counts / num_groups)
             v_bar = np.nanmean(v_wrapped, axis=0)
+            v_bar[np.isnan(v_bar)] = 0
         if use_set is not None:
-            use_bar = np.alltrue(use_set, axis=1)
+            use_bar = use_temp.reshape((num_groups, q, p))
+            use_bar = np.any(use_bar, axis=0)
         else:
             use_bar = None
-        out_bar = super().prox_op(v_bar, weight, rho, use_set=use_bar)
+        if np.alltrue(scales == 1):
+            scales = None
+        out_bar = super().prox_op(v_bar, weight, rho, use_set=use_bar,
+                                  prox_weights=scales)
         out = np.tile(out_bar, (num_groups, 1))
         out = out[:v.shape[0]]
         return out
