@@ -69,8 +69,10 @@ class Sparse(Component):
                 v_temp[~use_set] = np.nan
             else:
                 v_temp = v
-
-            v_bar = np.r_[v_temp, np.nan * np.ones(cs - remainder)]
+            if remainder == 0:
+                v_bar = v_temp
+            else:
+                v_bar = np.r_[v_temp, np.nan * np.ones(cs - remainder)]
             with warnings.catch_warnings():
                 warnings.simplefilter('ignore')
                 nan_counts = np.sum(np.isnan(v_bar.reshape((cn, cs))), axis=1)
