@@ -44,17 +44,18 @@ class SparseSecondDiffConvex(Component):
         cost = compose(cvx.sum, cvx.abs, lambda x: self.internal_scale * x, diff2)
         return cost
 
-    def prox_op(self, v, weight, rho, use_set=None, verbose=False, eps=1e-4):
+    def prox_op(self, v, weight, rho, use_set=None, verbose=True, eps=1e-6):
         vec_in, weight_val, rho_val = v, weight, rho
         # print(weight_val)
         problem = self._prox_prob
         ic = self.internal_scale
-        rol = rho_val / (weight_val * ic)
+        rol = rho_val / (weight_val)
         if problem is None:
-            P, q, A, l, u = make_all(vec_in, rol, use_set=use_set)
+            P, q, A, l, u = make_all(vec_in, rol, internal_scale=ic, use_set=use_set)
             problem = osqp.OSQP()
             problem.setup(P=P, q=q, A=A, l=l, u=u, verbose=verbose,
-                          eps_rel=eps, eps_abs=eps, polish=True)
+                          eps_rel=eps, eps_abs=eps, polish=True,
+                          max_iter=int(8e3))
             self._rho_over_lambda = rol
             self._prox_prob = problem
         else:
@@ -97,7 +98,7 @@ def make_q(len_x):
     return np.r_[np.zeros(len_x), np.ones(len_r), np.zeros(len_z)]
 
 
-def make_A(len_x, use_set=None):
+def make_A(len_x, internal_scale=1, use_set=None):
     len_r = len_x - 2
     len_z = len_x
     # block 00
@@ -105,7 +106,7 @@ def make_A(len_x, use_set=None):
     m1 = sp.eye(m=n - 2, n=n, k=0)
     m2 = sp.eye(m=n - 2, n=n, k=1)
     m3 = sp.eye(m=n - 2, n=n, k=2)
-    B00 = m1 - 2 * m2 + m3
+    B00 = internal_scale * (m1 - 2 * m2 + m3)
     # block 01
     B01 = sp.eye(len_r)
     # block 10
@@ -138,10 +139,10 @@ def make_lu(v, len_x):
     return l, u
 
 
-def make_all(v, rho_over_lambda, use_set=None):
+def make_all(v, rho_over_lambda, internal_scale=1, use_set=None):
     len_x = len(v)
     P = make_P(len_x, rho_over_lambda, use_set=use_set)
     q = make_q(len_x)
-    A = make_A(len_x, use_set=use_set)
+    A = make_A(len_x, internal_scale=internal_scale, use_set=use_set)
     l, u = make_lu(v, len_x)
     return P, q, A, l, u
