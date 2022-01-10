@@ -9,6 +9,7 @@ import numpy as np
 import cvxpy as cvx
 from functools import partial
 from osd.components.component import Component
+import warnings
 
 class Constant(Component):
     def __init__(self, **kwargs):
@@ -59,7 +60,7 @@ class ConstantChunks(Component):
         T = len(v)
         temp = v.copy()
         if self.use_set is not None:
-            temp[self.use_set] = np.nan
+            temp[~self.use_set] = np.nan
         num_chunks = T // self.length
         if T % self.length != 0:
             num_chunks += 1
@@ -68,11 +69,13 @@ class ConstantChunks(Component):
         temp = temp.reshape((self.length, num_chunks), order='F')
         # print(temp.shape)
         nrows = temp.shape[0]
-        avgs = np.nanmean(temp, axis=0)
+        with warnings.catch_warnings():
+            warnings.simplefilter('ignore')
+            avgs = np.nanmean(temp, axis=0)
+        avgs[np.isnan(avgs)] = 0
         out = np.tile(avgs, (nrows, True))
         out = out.ravel(order='F')
         out = out[:len(v)]
-        # return np.clip(out, -np.inf, 0)
         return out
 
 def make_constraints(x, T, K, length=None):
