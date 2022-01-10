@@ -22,7 +22,7 @@ class Mask():
         self.q = np.sum(use_set)
         self.M = make_mask_matrix(use_set)
         self.M_star = make_inverse_mask_matrix(use_set)
-        
+
     def mask(self, v):
         if self.p == 1:
             v = np.copy(v)
