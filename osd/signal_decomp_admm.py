@@ -42,8 +42,6 @@ def run_admm(data, components, num_iter=50, rho=None, use_ix=None, verbose=True,
         T, p = data.shape
     K = len(components)
     indices = np.arange(K)
-    if use_ix is None:
-        use_ix = np.ones_like(data, dtype=bool)
     if X_init is None:
         if p == 1:
             X = np.zeros((K, T))
@@ -83,20 +81,14 @@ def run_admm(data, components, num_iter=50, rho=None, use_ix=None, verbose=True,
     else:
         num_iter = len(rho)
     for it, rh in enumerate(rho):
-        if verbose:
-            td = time() - ti
-            if td < 60:
-                progress(it, num_iter, '{:.2f} sec   '.format(td))
-            else:
-                progress(it, num_iter, '{:.2f} min   '.format(td/60))
         # Apply proximal operators for each signal class
         for k in range(K):
             prox = components[k].prox_op
             weight = components[k].weight
             vin = X[k, :] - 2 * mask_op.unmask(u)
-            x_new = prox(vin, weight, rh, use_set=None)
+            x_new = prox(vin, weight, rh, use_set=use_ix)
             if debug:
-                plt.plot(X[k, :] - u, label='vin')
+                plt.plot(vin, label='vin')
                 plt.plot(x_new, label='vout')
                 plt.legend()
                 plt.title('Comp {}, iteration {}'.format(k + 1, it + 1))
@@ -105,7 +97,7 @@ def run_admm(data, components, num_iter=50, rho=None, use_ix=None, verbose=True,
             X[k, :] = x_new
 
         # dual_update
-        u += mask_op.mask(np.average(X[:, use_ix], axis=0) - y[use_ix] / K)
+        u += mask_op.mask(np.average(X, axis=0) - y / K)
         # record keeping
         obj_val = calc_obj(y, X, components, use_ix,
                            residual_term=residual_term)
@@ -118,6 +110,15 @@ def run_admm(data, components, num_iter=50, rho=None, use_ix=None, verbose=True,
         )
         residual.append(r)
         stopping_tolerance = abs_tol + rel_tol * np.linalg.norm(gradients[0])
+        if verbose:
+            td = time() - ti
+            if td < 60:
+                info = (td, r, stopping_tolerance)
+                msg = '{:.2f} sec, {:.2e}, {:.2e}   '
+            else:
+                info = (td/60, r, stopping_tolerance)
+                msg = '{:.2f} min, {:.2e}, {:.2e}   '
+            progress(it + 1, num_iter, msg.format(*info))
         if (obj_val < best['obj_val'] and r <= stopping_tolerance
                 and stop_early):
             best = {
@@ -136,17 +137,11 @@ def run_admm(data, components, num_iter=50, rho=None, use_ix=None, verbose=True,
             'it': it,
             'obj_val': obj_val
         }
-    if verbose:
-        td = time() - ti
-        if td < 60:
-            progress(num_iter, num_iter, '{:.2f} sec   '.format(td))
-        else:
-            progress(num_iter, num_iter, '{:.2f} min   '.format(td / 60))
     outdict = {
         'X': best['X'],
         'u': best['u'],
         'it': best['it'],
-        'optimality_residual': norm_dual_residual,
+        'optimality_residual': residual,
         'obj_vals': obj_vals,
         'best_obj': best['obj_val']
     }

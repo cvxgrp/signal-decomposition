@@ -85,38 +85,18 @@ class QuadLin(Component):
             if prox_weights is not None:
                 temp_mat.data *= prox_weights[prox_weights != 0]
             M = weight * self.P + rho * temp_mat
-            # Build constraints matrix
-            # A = build_constraint_matrix(
-            #     n, self.period, self.vavg, self.first_val
-            # )
-            # if A is not None and self.F is not None:
-            #     A = sp.bmat([
-            #         [A],
-            #         [self.F]
-            #     ])
-            # elif A is None and self.F is not None:
-            #     A = sp.csc_matrix(self.F)
             if self.F is not None:
-                # print(M.shape, A.shape)
                 A = sp.csc_matrix(self.F)
                 M = sp.bmat([
                     [M, A.T],
                     [A, None]
                 ])
             M = M.tocsc()
-            # print(M.shape)
             print('factorizing matrix of size ({} x {}) with {} nnz'.format(
                 *M.shape, M.nnz
             ))
             c = sp.linalg.factorized(M)
             print('done factorizing!')
-            # u = build_constraint_rhs(
-            #     len(v), self.period, self.vavg, self.first_val
-            # )
-            # if u is not None and self.F is not None:
-            #     u = np.r_[u, self.g]
-            # elif u is None and self.F is not None:
-            #     u = self.g
             if self.F is not None:
                 u = self.g
             self._c = c

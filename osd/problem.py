@@ -73,7 +73,7 @@ class Problem():
 
     def decompose(self, use_set=None, rho=None, how='admm',
                   num_iter=1e3, verbose=True, reset=False,
-                  randomize_start=False, X_init=None, u_init=None,
+                  X_init=None, u_init=None,
                   stop_early=False, abs_tol=1e-5, rel_tol=1e-5,
                   **cvx_kwargs):
         if rho is None:
@@ -105,9 +105,8 @@ class Problem():
         elif how.lower() in ['admm', 'sd-admm']:
             result = run_admm(
                 self.data, self.components, num_iter=num_iter, rho=rho,
-                use_ix=use_set, verbose=verbose,
-                randomize_start=randomize_start, X_init=X_init, u_init=u_init,
-                stop_early=stop_early, stopping_tolerance=stopping_tolerance,
+                use_ix=use_set, verbose=verbose, X_init=X_init, u_init=u_init,
+                stop_early=stop_early, abs_tol=abs_tol, rel_tol=rel_tol,
                 residual_term=self.residual_term
             )
             self.admm_result = result
@@ -115,7 +114,7 @@ class Problem():
         elif how.lower() in ['bcd', 'sd-bcd']:
             result = run_bcd(
                 self.data, self.components, num_iter=num_iter, use_ix=use_set,
-                stopping_tolerance=stopping_tolerance, X_init=X_init
+                abs_tol=abs_tol, rel_tol=rel_tol, X_init=X_init
             )
             self.bcd_result = result
             self.estimates = result['X']

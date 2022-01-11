@@ -41,17 +41,11 @@ def run_bcd(data, components, num_iter=50, use_ix=None, X_init=None,
     residual = []
     ti = time()
     for it in range(num_iter):
-        if verbose:
-            td = time() - ti
-            if td < 60:
-                progress(it, num_iter, '{:.2f} sec   '.format(td))
-            else:
-                progress(it, num_iter, '{:.2f} min   '.format(td / 60))
         for k in range(1, K):
             prox = components[k].prox_op
             weight = components[k].weight
             #### Coordinate descent updates
-            rhs = np.sum(X[np.logical_and(indices != 0, indices !=k)])
+            rhs = np.sum(X[np.logical_and(indices != 0, indices !=k)], axis=0)
             vin = data - rhs
             vout = prox(vin, weight, rho, use_set=use_ix)
             gradients[k, :] = rho * mask_op.zero_fill(vin - vout)
@@ -66,11 +60,17 @@ def run_bcd(data, components, num_iter=50, use_ix=None, X_init=None,
                                 residual_term=0))
         residual.append(r)
         stopping_tolerance = abs_tol + rel_tol * np.linalg.norm(gradients[0])
+        if verbose:
+            td = time() - ti
+            if td < 60:
+                info = (td, r, stopping_tolerance)
+                msg = '{:.2f} sec, {:.2e}, {:.2e}   '
+            else:
+                info = (td/60, r, stopping_tolerance)
+                msg = '{:.2f} min, {:.2e}, {:.2e}   '
+            progress(it + 1, num_iter, msg.format(*info))
         if r <= stopping_tolerance:
             break
-    if verbose:
-        td = time() - ti
-        progress(num_iter, num_iter, '{:.2f} sec\n'.format(td))
     out_dict = {
         'X': X,
         'obj_vals': obj,
