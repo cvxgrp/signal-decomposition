@@ -92,11 +92,11 @@ class QuadLin(Component):
                     [A, None]
                 ])
             M = M.tocsc()
-            print('factorizing matrix of size ({} x {}) with {} nnz'.format(
-                *M.shape, M.nnz
-            ))
+            # print('factorizing matrix of size ({} x {}) with {} nnz'.format(
+            #     *M.shape, M.nnz
+            # ))
             c = sp.linalg.factorized(M)
-            print('done factorizing!')
+            # print('done factorizing!')
             if self.F is not None:
                 u = self.g
             self._c = c

@@ -6,7 +6,7 @@ Author: Bennet Meyers
 import numpy as np
 from time import time
 from osd.masking import Mask
-from osd.utilities import calc_obj, progress, make_estimate
+from osd.utilities import calc_obj, make_estimate, AlgProgress
 
 
 def run_bcd(data, components, num_iter=50, use_ix=None, X_init=None,
@@ -40,6 +40,7 @@ def run_bcd(data, components, num_iter=50, use_ix=None, X_init=None,
     gradients = np.zeros_like(X)
     residual = []
     ti = time()
+    prog = AlgProgress(num_iter, ti)
     for it in range(num_iter):
         for k in range(1, K):
             prox = components[k].prox_op
@@ -61,14 +62,7 @@ def run_bcd(data, components, num_iter=50, use_ix=None, X_init=None,
         residual.append(r)
         stopping_tolerance = abs_tol + rel_tol * np.linalg.norm(gradients[0])
         if verbose:
-            td = time() - ti
-            if td < 60:
-                info = (td, r, stopping_tolerance)
-                msg = '{:.2f} sec, {:.2e}, {:.2e}   '
-            else:
-                info = (td/60, r, stopping_tolerance)
-                msg = '{:.2f} min, {:.2e}, {:.2e}   '
-            progress(it + 1, num_iter, msg.format(*info))
+            prog.print(obj_val, r, stopping_tolerance)
         if r <= stopping_tolerance:
             break
     out_dict = {

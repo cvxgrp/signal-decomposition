@@ -71,7 +71,7 @@ class Problem():
             c.set_weight(w)
         return
 
-    def decompose(self, use_set=None, rho=None, how='admm',
+    def decompose(self, use_set=None, rho=None, how=None,
                   num_iter=1e3, verbose=True, reset=False,
                   X_init=None, u_init=None,
                   stop_early=False, abs_tol=1e-5, rel_tol=1e-5,
@@ -85,6 +85,23 @@ class Problem():
             use_set = np.logical_and(use_set, self.known_set)
         self.use_set = use_set
         self.set_weights([c.weight for c in self.components])
+        if how is None:
+            if self.is_convex:
+                how = 'bcd'
+                if verbose:
+                    print('Convex problem detecting. Using BCD...')
+            else:
+                how = 'admm-polish'
+                if verbose:
+                    print('Non-convex problem detected. Using ADMM with ' +
+                          'BCD polish...')
+        if np.all([
+            X_init is None,
+            reset is False,
+            self.estimates is not None,
+        ]):
+            X_init = self.estimates
+
         if self.is_convex and how.lower() in ['cvx', 'cvxpy']:
             if self.problem is None or reset or np.any(use_set != self.use_set):
                 problem = self.__construct_cvx_problem(use_set=use_set)
@@ -118,6 +135,32 @@ class Problem():
             )
             self.bcd_result = result
             self.estimates = result['X']
+        elif how.lower() in ['admm-polish', 'admm-bcd']:
+            result = run_admm(
+                self.data, self.components, num_iter=num_iter, rho=rho,
+                use_ix=use_set, verbose=verbose, X_init=X_init, u_init=u_init,
+                stop_early=stop_early, abs_tol=abs_tol, rel_tol=rel_tol,
+                residual_term=self.residual_term
+            )
+            self.admm_result = result
+            if verbose:
+                print('\npolishing...\n')
+            result = run_bcd(
+                self.data, self.components, num_iter=10, use_ix=use_set,
+                abs_tol=abs_tol, rel_tol=rel_tol, X_init=result['X']
+            )
+            self.bcd_result = result
+            for key in ['obj_vals', 'optimality_residual']:
+                self.admm_result[key] = (
+                    self.admm_result[key][:self.admm_result['it']+1]
+                )
+                self.admm_result[key] = np.r_[
+                    self.admm_result[key], self.bcd_result[key]
+                ]
+            self.estimates = result['X']
+        elif how is not None:
+            m1 = "Sorry, I didn't catch that. Please select the 'how' kwarg \n"
+            m2 = "from 'cvxpy', 'bcd', 'admm', or 'admm-polish'. "
         else:
             m1 = 'This problem is non-convex and not solvable with CVXPY. '
             m2 = 'Please try solving with ADMM.'

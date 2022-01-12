@@ -9,6 +9,7 @@ Author: Bennet Meyers
 
 import functools
 import sys
+from time import time
 import scipy.sparse as sp
 
 import numpy as np
@@ -25,6 +26,24 @@ def compose(*functions):
     def compose2(f, g):
         return lambda x: f(g(x))
     return functools.reduce(compose2, functions, lambda x: x)
+
+class AlgProgress():
+    def __init__(self, total, start_time):
+        self.total = total
+        self.ti = start_time
+        self.count = 1
+
+    def print(self, obj_val, residual, stop_tol):
+        td = time() - self.ti
+        if td < 60:
+            info = (td, obj_val, residual, stop_tol)
+            msg = '{:.2f} sec -- obj_val: {:.2e}, r: {:.2e}, tol: {:.2e}      '
+        else:
+            info = (td / 60, obj_val, residual, stop_tol)
+            msg = '{:.2f} min -- obj_val: {:.2e}, r: {:.2e}, tol: {:.2e}      '
+        progress(self.count, self.total, msg.format(*info), bar_length=20)
+        self.count += 1
+        return
 
 
 def progress(count, total, status='', bar_length=60):

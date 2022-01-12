@@ -14,7 +14,6 @@ Author: Bennet Meyers
 '''
 
 import cvxpy as cvx
-import osqp
 import scipy.sparse as sp
 from osd.components.component import Component
 from osd.utilities import compose

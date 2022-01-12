@@ -10,7 +10,7 @@ Author: Bennet Meyers
 import numpy as np
 from time import time
 from osd.masking import Mask
-from osd.utilities import progress, make_estimate, calc_obj
+from osd.utilities import make_estimate, calc_obj, AlgProgress
 import matplotlib.pyplot as plt
 
 
@@ -80,6 +80,7 @@ def run_admm(data, components, num_iter=50, rho=None, use_ix=None, verbose=True,
         rho = np.ones(num_iter, dtype=float) * rho
     else:
         num_iter = len(rho)
+    prog = AlgProgress(num_iter, ti)
     for it, rh in enumerate(rho):
         # Apply proximal operators for each signal class
         for k in range(K):
@@ -111,24 +112,18 @@ def run_admm(data, components, num_iter=50, rho=None, use_ix=None, verbose=True,
         residual.append(r)
         stopping_tolerance = abs_tol + rel_tol * np.linalg.norm(gradients[0])
         if verbose:
-            td = time() - ti
-            if td < 60:
-                info = (td, r, stopping_tolerance)
-                msg = '{:.2f} sec, {:.2e}, {:.2e}   '
-            else:
-                info = (td/60, r, stopping_tolerance)
-                msg = '{:.2f} min, {:.2e}, {:.2e}   '
-            progress(it + 1, num_iter, msg.format(*info))
-        if (obj_val < best['obj_val'] and r <= stopping_tolerance
-                and stop_early):
+            prog.print(obj_val, r, stopping_tolerance)
+        if (obj_val < best['obj_val'] and stop_early):
             best = {
                 'X': X_tilde,
                 'u': u,
                 'it': it,
                 'obj_val': obj_val
             }
-        if r <= stopping_tolerance:
+        if r <= stopping_tolerance or (stop_early and it - best['it'] > 200):
             break
+    if best['obj_val'] == np.inf:
+        stop_early = False
     if not stop_early:
         X_tilde = make_estimate(y, X, use_ix)
         best = {
