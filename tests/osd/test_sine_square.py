@@ -1,7 +1,6 @@
 import unittest
 import numpy as np
 from scipy import signal
-import matplotlib.pyplot as plt
 from osd import Problem
 from osd.components import (
     MeanSquareSmall,
@@ -67,8 +66,6 @@ class TestSineSquareMasked(unittest.TestCase):
         components = [c1, c2, c3]
         problem1 = Problem(y, components)
         problem1.decompose(how='cvx')
-        # fig = problem1.plot_decomposition(X_real=X_real)
-        # plt.show()
         opt_obj_val = problem1.objective_value
         np.testing.assert_(opt_obj_val <= 0.081)
         rms1 = rms(problem1.estimates[0, problem1.use_set] -
