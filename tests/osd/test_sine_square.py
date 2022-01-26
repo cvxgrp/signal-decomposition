@@ -1,6 +1,7 @@
 import unittest
 import numpy as np
 from scipy import signal
+import matplotlib.pyplot as plt
 from osd import Problem
 from osd.components import (
     MeanSquareSmall,
@@ -56,6 +57,78 @@ class TestSineSquare(unittest.TestCase):
         np.testing.assert_(rms(problem1.estimates[1] - X_real[1]) <= 0.23)
         np.testing.assert_(rms(problem1.estimates[2] - X_real[2]) <= 0.27)
 
+class TestSineSquareMasked(unittest.TestCase):
+    def test_cvx(self):
+        y, X_real = make_masked_data()
+        T = len(y)
+        c1 = MeanSquareSmall(size=T)
+        c2 = SmoothSecondDifference(weight=1e3 / T)
+        c3 = SparseFirstDiffConvex(weight=2e0 / T, vmax=1, vmin=-1)
+        components = [c1, c2, c3]
+        problem1 = Problem(y, components)
+        problem1.decompose(how='cvx')
+        # fig = problem1.plot_decomposition(X_real=X_real)
+        # plt.show()
+        opt_obj_val = problem1.objective_value
+        np.testing.assert_(opt_obj_val <= 0.081)
+        rms1 = rms(problem1.estimates[0, problem1.use_set] -
+                   X_real[0, problem1.use_set])
+        rms2 =rms(problem1.estimates[1, problem1.use_set] -
+                  X_real[1, problem1.use_set])
+        rms3 = rms(problem1.estimates[2, problem1.use_set] -
+                   X_real[2, problem1.use_set])
+        np.testing.assert_(rms1 <= 0.14)
+        np.testing.assert_(rms2 <= 1.04)
+        np.testing.assert_(rms3 <= 0.81)
+
+    def test_admm(self):
+        y, X_real = make_masked_data()
+        T = len(y)
+        c1 = MeanSquareSmall(size=T)
+        c2 = SmoothSecondDifference(weight=1e3 / T)
+        c3 = SparseFirstDiffConvex(weight=2e0 / T, vmax=1, vmin=-1)
+        components = [c1, c2, c3]
+        problem1 = Problem(y, components)
+        problem1.decompose(how='admm')
+        opt_obj_val = problem1.objective_value
+        np.testing.assert_(opt_obj_val <= 0.081)
+        rms1 = rms(problem1.estimates[0, problem1.use_set] -
+                   X_real[0, problem1.use_set])
+        rms2 = rms(problem1.estimates[1, problem1.use_set] -
+                   X_real[1, problem1.use_set])
+        rms3 = rms(problem1.estimates[2, problem1.use_set] -
+                   X_real[2, problem1.use_set])
+        np.testing.assert_(rms1 <= 0.14)
+        np.testing.assert_(rms2 <= 1.04)
+        np.testing.assert_(rms3 <= 0.81)
+
+    def test_bcd(self):
+        y, X_real = make_masked_data()
+        T = len(y)
+        c1 = MeanSquareSmall(size=T)
+        c2 = SmoothSecondDifference(weight=1e3 / T)
+        c3 = SparseFirstDiffConvex(weight=2e0 / T, vmax=1, vmin=-1)
+        components = [c1, c2, c3]
+        problem1 = Problem(y, components)
+        problem1.decompose(how='bcd')
+        opt_obj_val = problem1.objective_value
+        np.testing.assert_(opt_obj_val <= 0.081)
+        rms1 = rms(problem1.estimates[0, problem1.use_set] -
+                   X_real[0, problem1.use_set])
+        rms2 = rms(problem1.estimates[1, problem1.use_set] -
+                   X_real[1, problem1.use_set])
+        rms3 = rms(problem1.estimates[2, problem1.use_set] -
+                   X_real[2, problem1.use_set])
+        np.testing.assert_(rms1 <= 0.14)
+        np.testing.assert_(rms2 <= 1.04)
+        np.testing.assert_(rms3 <= 0.81)
+
+def make_masked_data():
+    y, X_real = make_data()
+    y[55:90] = np.nan
+    y[270:360] = np.nan
+    X_real[:, np.isnan(y)] = np.nan
+    return y, X_real
 
 def make_data():
     """
