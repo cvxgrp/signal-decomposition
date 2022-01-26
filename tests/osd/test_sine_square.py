@@ -21,7 +21,7 @@ class TestSineSquare(unittest.TestCase):
         problem1 = Problem(y, components)
         problem1.decompose(how='cvx')
         opt_obj_val = problem1.objective_value
-        np.testing.assert_(opt_obj_val <= 0.1)
+        np.testing.assert_(opt_obj_val <= 0.096)
         np.testing.assert_(rms(problem1.estimates[0] - X_real[0]) <= 0.1)
         np.testing.assert_(rms(problem1.estimates[1] - X_real[1]) <= 0.21)
         np.testing.assert_(rms(problem1.estimates[2] - X_real[2]) <= 0.25)
@@ -36,7 +36,7 @@ class TestSineSquare(unittest.TestCase):
         problem1 = Problem(y, components)
         problem1.decompose(how='admm')
         opt_obj_val = problem1.objective_value
-        np.testing.assert_(opt_obj_val <= 0.1)
+        np.testing.assert_(opt_obj_val <= 0.096)
         np.testing.assert_(rms(problem1.estimates[0] - X_real[0]) <= 0.1)
         np.testing.assert_(rms(problem1.estimates[1] - X_real[1]) <= 0.21)
         np.testing.assert_(rms(problem1.estimates[2] - X_real[2]) <= 0.251)
@@ -51,7 +51,7 @@ class TestSineSquare(unittest.TestCase):
         problem1 = Problem(y, components)
         problem1.decompose(how='bcd')
         opt_obj_val = problem1.objective_value
-        np.testing.assert_(opt_obj_val <= 0.1)
+        np.testing.assert_(opt_obj_val <= 0.096)
         np.testing.assert_(rms(problem1.estimates[0] - X_real[0]) <= 0.1)
         np.testing.assert_(rms(problem1.estimates[1] - X_real[1]) <= 0.23)
         np.testing.assert_(rms(problem1.estimates[2] - X_real[2]) <= 0.27)
