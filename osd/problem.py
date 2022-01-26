@@ -71,13 +71,15 @@ class Problem():
             c.set_weight(w)
         return
 
-    def decompose(self, use_set=None, rho=None, how=None,
+    def decompose(self, use_set=None, rho=None, rho0_scale=None, how=None,
                   num_iter=1e3, verbose=True, reset=False,
                   X_init=None, u_init=None,
-                  stop_early=False, abs_tol=1e-5, rel_tol=1e-5,
+                  stop_early=True, abs_tol=1e-5, rel_tol=1e-5,
                   **cvx_kwargs):
+        if rho0_scale is None:
+            rho0_scale = 1
         if rho is None:
-            rho = 2 / (self.data.size * self.components[0].weight)
+            rho = 2 * rho0_scale / (self.data.size * self.components[0].weight)
         num_iter = int(num_iter)
         if use_set is None:
             use_set = self.known_set
@@ -89,7 +91,7 @@ class Problem():
             if self.is_convex:
                 how = 'bcd'
                 if verbose:
-                    print('Convex problem detecting. Using BCD...')
+                    print('Convex problem detected. Using BCD...')
             else:
                 how = 'admm-polish'
                 if verbose:
@@ -131,7 +133,8 @@ class Problem():
         elif how.lower() in ['bcd', 'sd-bcd']:
             result = run_bcd(
                 self.data, self.components, num_iter=num_iter, use_ix=use_set,
-                abs_tol=abs_tol, rel_tol=rel_tol, X_init=X_init
+                abs_tol=abs_tol, rel_tol=rel_tol, X_init=X_init,
+                verbose=verbose
             )
             self.bcd_result = result
             self.estimates = result['X']
@@ -142,29 +145,30 @@ class Problem():
                 stop_early=stop_early, abs_tol=abs_tol, rel_tol=rel_tol,
                 residual_term=self.residual_term
             )
+            result['it'] = len(result['obj_vals']) - 1
             self.admm_result = result
             if verbose:
                 print('\npolishing...\n')
             result = run_bcd(
                 self.data, self.components, num_iter=10, use_ix=use_set,
-                abs_tol=abs_tol, rel_tol=rel_tol, X_init=result['X']
+                abs_tol=abs_tol, rel_tol=rel_tol, X_init=result['X'],
+                verbose=verbose
             )
             self.bcd_result = result
             for key in ['obj_vals', 'optimality_residual']:
-                self.admm_result[key] = (
-                    self.admm_result[key][:self.admm_result['it']+1]
-                )
                 self.admm_result[key] = np.r_[
                     self.admm_result[key], self.bcd_result[key]
                 ]
             self.estimates = result['X']
-        elif how is not None:
-            m1 = "Sorry, I didn't catch that. Please select the 'how' kwarg \n"
-            m2 = "from 'cvxpy', 'bcd', 'admm', or 'admm-polish'. "
-        else:
+        elif not self.is_convex and how.lower() in ['cvx', 'cvxpy']:
             m1 = 'This problem is non-convex and not solvable with CVXPY. '
             m2 = 'Please try solving with ADMM.'
             print(m1 + m2)
+        else:
+            m1 = "Sorry, I didn't catch that. Please select the 'how' kwarg \n"
+            m2 = "from 'cvxpy', 'bcd', 'admm', or 'admm-polish'. "
+            print(m1 + m2)
+
 
     def holdout_validation(self, holdout=0.2, seed=None, solver='ECOS',
                                reuse=False, cost=None, admm=False):
@@ -205,10 +209,10 @@ class Problem():
             return
         if not exponentiate:
             f = lambda x: x
-            base = '$x'
+            base = 'Component $x'
         else:
             f = lambda x: np.exp(x)
-            base = '$\\tilde{x}'
+            base = 'Component $\\tilde{x}'
         if skip is not None:
             skip = np.atleast_1d(skip)
             nd = len(skip)
@@ -226,11 +230,9 @@ class Problem():
                 continue
             if k == 0:
                 est = self.estimates[k]
-                s = self.use_set
-                ax[ax_ix].plot(xs[s], f(est[s]), label=label, linewidth=1,
+                ax[ax_ix].plot(xs, f(est), label=label, linewidth=1,
                                ls='none', marker='.', ms=2)
-                ax[ax_ix].set_title(base + '^{}$'.format(k + 1) +
-                                    ' for the known set')
+                ax[ax_ix].set_title(base + '^{}$'.format(k + 1))
                 if X_real is not None:
                     true = X_real[k]
                     ax[ax_ix].plot(true, label='true', linewidth=1)
