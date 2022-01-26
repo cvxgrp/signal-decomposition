@@ -81,6 +81,11 @@ def run_admm(data, components, num_iter=50, rho=None, use_ix=None, verbose=True,
     else:
         num_iter = len(rho)
     prog = AlgProgress(num_iter, ti)
+    if verbose:
+        m1 =  'Starting ADMM...\n'
+        m1 += 'X shape: {}\n'.format(X.shape)
+        m1 += 'u shape: {}\n'.format(u.shape)
+        print(m1)
     for it, rh in enumerate(rho):
         # Apply proximal operators for each signal class
         for k in range(K):
