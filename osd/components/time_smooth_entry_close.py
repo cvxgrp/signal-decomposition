@@ -203,7 +203,7 @@ class TimeSmoothPeriodicEntryClose(TimeSmoothEntryClose):
             return cost
         return costfunc
 
-    def prox_op(self, v, weight, rho, use_set=None):
+    def prox_op(self, v, weight, rho, use_set=None, prox_weights=None):
         # todo: check this implementation of mprox
         q = self.period_T
         T, p = v.shape
