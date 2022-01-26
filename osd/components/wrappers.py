@@ -8,18 +8,23 @@ Author: Bennet Meyers
 '''
 
 import numpy as np
+import cvxpy as cvx
 import warnings
 
 def make_columns_equal(component):
     class NewClass(component):
         def __init__(self, **kwargs):
             super().__init__(**kwargs)
+            if self.internal_constraints is None:
+                self._internal_constraints = []
+            self._internal_constraints.append(
+                lambda x, T, p: cvx.diff(x, k=1, axis=1) == 0
+            )
 
         def _get_cost(self):
             f = super()._get_cost()
             def g(x):
-                p = x.shape[1]
-                return p * f(x)
+                return f(x[:, 0])
             return g
 
         def prox_op(self, v, weight, rho, use_set=None):
