@@ -54,7 +54,7 @@ class ConstantChunks(Component):
         cost = lambda x: 0
         return cost
 
-    def prox_op(self, v, weight, rho, use_set=None):
+    def prox_op(self, v, weight, rho, use_set=None, prox_counts=None):
         if use_set is not None:
             self.use_set = use_set
         T = len(v)
@@ -66,6 +66,15 @@ class ConstantChunks(Component):
             num_chunks += 1
             pad = self.length - T % self.length
             temp = np.r_[temp, [np.nan] * pad]
+        if prox_counts is not None:
+            pc  = prox_counts.copy()
+            if len(pc) < len(temp):
+                pc = np.r_[pc, [0] * pad]
+                temp *= np.r_[prox_counts, [0] * pad]
+            else:
+                temp *= prox_counts
+            pc = pc.reshape((self.length, num_chunks), order='F')
+            col_counts = np.sum(pc, axis=0)
         temp = temp.reshape((self.length, num_chunks), order='F')
         # print(temp.shape)
         nrows = temp.shape[0]
@@ -73,6 +82,10 @@ class ConstantChunks(Component):
             warnings.simplefilter('ignore')
             avgs = np.nanmean(temp, axis=0)
         avgs[np.isnan(avgs)] = 0
+        if prox_counts is not None:
+            # note the special handling of nan values at this point!
+            avgs *= np.sum(~np.isnan(temp), axis=0)
+            avgs /= col_counts
         out = np.tile(avgs, (nrows, True))
         out = out.ravel(order='F')
         out = out[:len(v)]
