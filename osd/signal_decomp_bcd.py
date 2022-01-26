@@ -39,6 +39,11 @@ def run_bcd(data, components, num_iter=50, use_ix=None, X_init=None,
     # obj.append(calc_obj(y, X, components, use_ix, residual_term=0))
     gradients = np.zeros_like(X)
     residual = []
+    if verbose:
+        m1 = 'Starting BCD...\n'
+        m1 += 'y shape: {}\n'.format(y.shape)
+        m1 += 'X shape: {}\n'.format(X.shape)
+        print(m1)
     ti = time()
     prog = AlgProgress(num_iter, ti)
     for it in range(num_iter):

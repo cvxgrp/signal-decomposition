@@ -115,7 +115,7 @@ class Problem():
                 for ix, x in enumerate(problem.variables()):
                     x.value = X_init[ix, :]
             # print(self.problem.is_dcp())
-            problem.solve(**cvx_kwargs)
+            problem.solve(verbose=verbose, **cvx_kwargs)
             sorted_order = np.argsort([v.name() for v in problem.variables()])
             ests = np.array([x.value for x in
                              np.asarray(problem.variables())[sorted_order]

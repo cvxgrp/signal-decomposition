@@ -83,6 +83,7 @@ def run_admm(data, components, num_iter=50, rho=None, use_ix=None, verbose=True,
     prog = AlgProgress(num_iter, ti)
     if verbose:
         m1 =  'Starting ADMM...\n'
+        m1 += 'y shape: {}\n'.format(y.shape)
         m1 += 'X shape: {}\n'.format(X.shape)
         m1 += 'u shape: {}\n'.format(u.shape)
         print(m1)
