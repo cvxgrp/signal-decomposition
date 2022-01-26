@@ -47,7 +47,7 @@ class AsymmetricNoise(Component):
         tau = cvx.Parameter(nonneg=True)
         return {'tau': tau}
 
-    def prox_op(self, v, weight, rho, use_set=None):
+    def prox_op(self, v, weight, rho, use_set=None, prox_counts=None):
         kappa = weight / (2 * rho)
         tau = self._tau
         a = v + (weight / rho) * (0.5 - tau)
