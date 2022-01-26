@@ -17,9 +17,18 @@ def make_columns_equal(component):
             super().__init__(**kwargs)
             if self.internal_constraints is None:
                 self._internal_constraints = []
-            self._internal_constraints.append(
-                lambda x, T, p: cvx.diff(x, k=1, axis=1) == 0
-            )
+            if isinstance(self.internal_constraints, list):
+                self._internal_constraints.append(
+                    lambda x, T, p: cvx.diff(x, k=1, axis=1) == 0
+                )
+            else:
+                # it's a function that generates a list of constraints
+                ic = self._internal_constraints
+                def new_f(x, T, p):
+                    l1 = ic(x, T, p)
+                    l1.append(cvx.diff(x, k=1, axis=1) == 0)
+                    return l1
+                self._internal_constraints = new_f
 
         def _get_cost(self):
             f = super()._get_cost()
