@@ -21,17 +21,22 @@ import osqp
 import scipy.sparse as sp
 from functools import partial
 import numpy as np
+from scipy.signal import find_peaks
+import warnings
 from osd.components.component import Component
 from osd.utilities import compose
 from osd.masking import make_masked_identity_matrix
 
 class SparseSecondDiffConvex(Component):
 
-    def __init__(self, internal_scale=1., **kwargs):
+    def __init__(self, internal_scale=1., prox_polish=False,
+                 max_bp=None, **kwargs):
         super().__init__(**kwargs)
         self._prox_prob = None
         self._rho_over_lambda = None
         self.internal_scale = internal_scale
+        self.prox_polish = prox_polish
+        self.max_bp = max_bp
         self._it = 0
         return
 
@@ -44,41 +49,79 @@ class SparseSecondDiffConvex(Component):
         cost = compose(cvx.sum, cvx.abs, lambda x: self.internal_scale * x, diff2)
         return cost
 
-    def prox_op(self, v, weight, rho, use_set=None, verbose=True, eps=1e-6):
-        vec_in, weight_val, rho_val = v, weight, rho
-        # print(weight_val)
+    # def prox_op(self, v, weight, rho, use_set=None, verbose=False, eps=3.25e-4):
+    #     vec_in, weight_val, rho_val = v, weight, rho
+    #     # print(weight_val)
+    #     problem = self._prox_prob
+    #     ic = self.internal_scale
+    #     rol = rho_val / (weight_val)
+    #     if problem is None:
+    #         P, q, A, l, u = make_all(vec_in, rol, internal_scale=ic, use_set=use_set)
+    #         problem = osqp.OSQP()
+    #         problem.setup(P=P, q=q, A=A, l=l, u=u, verbose=verbose,
+    #                       eps_rel=eps, eps_abs=eps, polish=True,
+    #                       max_iter=int(2e3))
+    #         self._rho_over_lambda = rol
+    #         self._prox_prob = problem
+    #     else:
+    #         l_new, u_new = make_lu(vec_in, len(vec_in))
+    #         problem.update(l=l_new, u=u_new)
+    #         # eps = max(
+    #         #     (self._it / 100) * 1e-3 + (1 - self._it / 100) * 1e-7,
+    #         #     1e-9
+    #         # )
+    #         # if eps >= 1e-5:
+    #         #     polish = True
+    #         # else:
+    #         #     polish = False
+    #         # print('{:.2e}'.format(eps), polish)
+    #         # problem.update_settings(eps_abs=eps, eps_rel=eps, polish=polish)
+    #         if ~np.isclose(rol, self._rho_over_lambda, atol=1e-3):
+    #             P_new = make_P(len(vec_in), rol)
+    #             problem.update(Px=P_new)
+    #             self._rho_over_lambda = rol
+    #     results = problem.solve()
+    #     out = results.x[:len(vec_in)]
+    #     self._it += 1
+    #     if self.prox_polish and self._it >= 5:
+    #         z = np.abs(np.diff(out, n=2))
+    #         detector = z / np.max(z)
+    #         detector = np.log10(detector)
+    #         peaks, _ = find_peaks(detector, distance=len(detector)*0.025)
+    #         peaks += 1
+    #         heights = z[peaks]
+    #         bpts = peaks[np.argsort(heights)][:self.max_bp]
+    #         return fit_pwl(out, use_set, bpts)
+    #     else:
+    #         return out
+
+    def prox_op(self, v, weight, rho, use_set=None, verbose=False):
+        if use_set is None:
+            use_set = np.ones_like(v, dtype=bool)
         problem = self._prox_prob
         ic = self.internal_scale
-        rol = rho_val / (weight_val)
         if problem is None:
-            P, q, A, l, u = make_all(vec_in, rol, internal_scale=ic, use_set=use_set)
-            problem = osqp.OSQP()
-            problem.setup(P=P, q=q, A=A, l=l, u=u, verbose=verbose,
-                          eps_rel=eps, eps_abs=eps, polish=True,
-                          max_iter=int(8e3))
-            self._rho_over_lambda = rol
-            self._prox_prob = problem
+            x = cvx.Variable(len(v))
+            Mv = cvx.Parameter(np.sum(use_set), value=v[use_set], name='Mv')
+            w = cvx.Parameter(value=weight, name='weight', nonneg=True)
+            r = cvx.Parameter(value=rho, name='rho', nonneg=True)
+            objective = cvx.Minimize(
+                w * cvx.norm1(ic * cvx.diff(x, k=2)) + r / 2 * cvx.sum_squares(
+                    x[use_set] - Mv
+                )
+            )
+            problem = cvx.Problem(objective)
         else:
-            l_new, u_new = make_lu(vec_in, len(vec_in))
-            problem.update(l=l_new, u=u_new)
-            # eps = max(
-            #     (self._it / 100) * 1e-3 + (1 - self._it / 100) * 1e-7,
-            #     1e-9
-            # )
-            # if eps >= 1e-5:
-            #     polish = True
-            # else:
-            #     polish = False
-            # print('{:.2e}'.format(eps), polish)
-            # problem.update_settings(eps_abs=eps, eps_rel=eps, polish=polish)
-            if ~np.isclose(rol, self._rho_over_lambda, atol=1e-3):
-                P_new = make_P(len(vec_in), rol)
-                problem.update(Px=P_new)
-                self._rho_over_lambda = rol
-        results = problem.solve()
-        self._it += 0
-        return results.x[:len(vec_in)]
-
+            params = problem.param_dict
+            params['Mv'].value = v[use_set]
+            if ~np.isclose(weight, params['weight'].value, atol=1e-3):
+                params['weight'].value = weight
+            if ~np.isclose(rho, params['rho'].value, atol=1e-3):
+                params['rho'].value = rho
+        with warnings.catch_warnings():
+            warnings.simplefilter('ignore')
+            problem.solve(solver='MOSEK')
+        return problem.variables()[0].value
 
 def make_P(len_x, rho_over_lambda, use_set=None):
     len_r = len_x - 2
@@ -146,3 +189,16 @@ def make_all(v, rho_over_lambda, internal_scale=1, use_set=None):
     A = make_A(len_x, internal_scale=internal_scale, use_set=use_set)
     l, u = make_lu(v, len_x)
     return P, q, A, l, u
+
+def fit_pwl(x, mask, breakpoints):
+    if mask is None:
+        mask = np.ones_like(x, dtype=bool)
+    breakpoints = np.atleast_1d(breakpoints)
+    h0 = np.ones(len(x))
+    h1 = np.arange(len(x))
+    hns = np.vstack([np.clip(np.arange(len(x)) - bp, 0, np.inf) for bp in breakpoints]).T
+    B = np.c_[np.c_[h0, h1], hns]
+    x_tilde = x[mask]
+    B_tilde = B[mask]
+    coef = np.linalg.lstsq(B_tilde, x_tilde, rcond=-1)[0]
+    return B @ coef
