@@ -33,20 +33,30 @@ class AlgProgress():
         self.ti = start_time
         self.count = 1
 
-    def print(self, obj_val, residual, stop_tol):
+    def print(self, obj_val, residual, stop_tol, done=False):
         td = time() - self.ti
+        if done:
+            self.count -= 1
         if td < 60:
-            info = (td, obj_val, residual, stop_tol)
-            msg = '{:.2f} sec -- obj_val: {:.2e}, r: {:.2e}, tol: {:.2e}      '
+            info = (self.count, td, obj_val, residual, stop_tol)
+            msg = '{} iterations, {:.2f} sec -- obj_val: {:.2e}, r: {:.2e},'
+            msg += ' tol: {:.2e}      '
         else:
-            info = (td / 60, obj_val, residual, stop_tol)
-            msg = '{:.2f} min -- obj_val: {:.2e}, r: {:.2e}, tol: {:.2e}      '
-        progress(self.count, self.total, msg.format(*info), bar_length=20)
+            info = (self.count, td / 60, obj_val, residual, stop_tol)
+            msg = '{} iterations, {:.2f} min -- obj_val: {:.2e}, r: {:.2e},'
+            msg += ' tol: {:.2e}      '
+        if not done:
+            progress(self.count, self.total, msg.format(*info), bar_length=20,
+                     show_percents=False)
+        else:
+            progress(self.total, self.total, msg.format(*info), bar_length=20,
+                     show_percents=False)
+            print('\n')
         self.count += 1
         return
 
 
-def progress(count, total, status='', bar_length=60):
+def progress(count, total, status='', bar_length=60, show_percents=True):
     """
     Python command line progress bar in less than 10 lines of code. · GitHub
     https://gist.github.com/vladignatyev/06860ec2040cb497f0f3
@@ -60,8 +70,10 @@ def progress(count, total, status='', bar_length=60):
 
     percents = round(100.0 * count / float(total), 1)
     bar = '=' * filled_len + '-' * (bar_len - filled_len)
-
-    sys.stdout.write('[%s] %s%s ...%s\r' % (bar, percents, '%', status))
+    if show_percents:
+        sys.stdout.write('[%s] %s%s ...%s\r' % (bar, percents, '%', status))
+    else:
+        sys.stdout.write('[%s] ...%s\r' % (bar, status))
     sys.stdout.flush()
 
 
