@@ -15,7 +15,7 @@ import matplotlib.pyplot as plt
 
 
 def run_admm(data, components, num_iter=50, rho=None, use_ix=None, verbose=True,
-             X_init=None, u_init=None, stop_early=False, residual_term=0,
+             X_init=None, u_init=None, stop_early=True, residual_term=0,
              abs_tol=1e-5, rel_tol=1e-5, debug=False):
     """
     Serial implementation of SD ADMM algorithm.
@@ -120,7 +120,9 @@ def run_admm(data, components, num_iter=50, rho=None, use_ix=None, verbose=True,
                 'it': it,
                 'obj_val': obj_val
             }
-        if r <= stopping_tolerance or (stop_early and it - best['it'] > 200):
+        if r <= stopping_tolerance or (stop_early and it - best['it'] > 25):
+            if verbose:
+                prog.print(obj_val, r, stopping_tolerance, done=True)
             break
     if best['obj_val'] == np.inf:
         stop_early = False
