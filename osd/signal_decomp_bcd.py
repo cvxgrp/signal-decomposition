@@ -57,13 +57,15 @@ def run_bcd(data, components, num_iter=50, use_ix=None, X_init=None,
             (1 / (K - 1)) * np.sum(np.power(
                 gradients[indices !=  0] - gradients[0], 2))
         )
-        obj.append(calc_obj(y, X, components, use_ix,
-                                residual_term=0))
+        obj_val = calc_obj(y, X, components, use_ix, residual_term=0)
+        obj.append(obj_val)
         residual.append(r)
         stopping_tolerance = abs_tol + rel_tol * np.linalg.norm(gradients[0])
         if verbose:
             prog.print(obj_val, r, stopping_tolerance)
         if r <= stopping_tolerance:
+            if verbose:
+                prog.print(obj_val, r, stopping_tolerance, done=True)
             break
     out_dict = {
         'X': X,
