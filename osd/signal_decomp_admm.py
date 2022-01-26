@@ -86,7 +86,6 @@ def run_admm(data, components, num_iter=50, rho=None, use_ix=None, verbose=True,
         m1 += 'y shape: {}\n'.format(y.shape)
         m1 += 'X shape: {}\n'.format(X.shape)
         m1 += 'u shape: {}\n'.format(u.shape)
-        print(m1)
     for it, rh in enumerate(rho):
         # Apply proximal operators for each signal class
         for k in range(K):
