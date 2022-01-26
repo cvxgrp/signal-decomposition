@@ -78,7 +78,7 @@ class OneJump(Component):
             return x_no_jump
 
 
-def find_jump(signal, min_fraction=None, use_set=None):
+def find_jump(signal, min_fraction=None, use_set=None, prox_counts=None):
     """
     Find the breakpoint in a scalar signal that minimizes the total variance in
     both signal segments

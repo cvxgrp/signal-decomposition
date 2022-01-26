@@ -48,7 +48,7 @@ class Component(ABC):
         return NotImplementedError
 
     @abstractmethod
-    def prox_op(self, v, weight, rho, use_set=None):
+    def prox_op(self, v, weight, rho, use_set=None, prox_counts=None):
         assert not hasattr(super(), 'prox_op')
         return NotImplementedError
 

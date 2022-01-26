@@ -95,7 +95,8 @@ class SparseSecondDiffConvex(Component):
     #     else:
     #         return out
 
-    def prox_op(self, v, weight, rho, use_set=None, verbose=False):
+    def prox_op(self, v, weight, rho, use_set=None, verbose=False,
+                prox_counts=None):
         if use_set is None:
             use_set = np.ones_like(v, dtype=bool)
         problem = self._prox_prob

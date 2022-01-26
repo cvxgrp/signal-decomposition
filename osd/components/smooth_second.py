@@ -40,7 +40,7 @@ class SmoothSecondDifference(QuadLin):
         cost = compose(cvx.sum_squares, cost)
         return cost
 
-    def prox_op(self, v, weight, rho, use_set=None):
+    def prox_op(self, v, weight, rho, use_set=None, prox_counts=None):
         n = len(v)
         if self.P is None:
             self.P = make_l2d2matrix(n)
@@ -68,7 +68,7 @@ class SmoothSecondDiffPeriodic(SmoothSecondDifference):
         ]
         return
 
-    def prox_op(self, v, weight, rho, use_set=None):
+    def prox_op(self, v, weight, rho, use_set=None, prox_counts=None):
         n = len(v)
         q = self.period_T
         num_groups = n // q

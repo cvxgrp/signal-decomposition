@@ -50,7 +50,7 @@ class Sparse(Component):
         cost = compose(cvx.sum, cvx.abs)
         return cost
 
-    def prox_op(self, v, weight, rho, use_set=None):
+    def prox_op(self, v, weight, rho, use_set=None, prox_counts=None):
         if self.chunk_size is None:
             kappa = weight / rho
             t1 = v - kappa

@@ -24,7 +24,7 @@ class MeanSquareSmall(Component):
         f = lambda x: cvx.sum_squares(x) / self.size
         return f
 
-    def prox_op(self, v, weight, rho, use_set=None):
+    def prox_op(self, v, weight, rho, use_set=None, prox_counts=None):
         a = (2 * weight) / (rho * self.size)
         r = 1 / (1 + a)
         out = r * np.asarray(v)

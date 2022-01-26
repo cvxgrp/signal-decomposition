@@ -27,7 +27,7 @@ class Constant(Component):
         cost = lambda x: 0
         return cost
 
-    def prox_op(self, v, weight, rho, use_set=None):
+    def prox_op(self, v, weight, rho, use_set=None, prox_counts=None):
         if use_set is None:
             avg = np.average(v)
         else:

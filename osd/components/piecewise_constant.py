@@ -40,7 +40,7 @@ class PiecewiseConstant(Component):
     def _get_cost(self):
         return lambda x: 0
 
-    def prox_op(self, v, weight, rho, use_set=None):
+    def prox_op(self, v, weight, rho, use_set=None, prox_counts=None):
         if self.prox_M is None and use_set is not None:
             self.prox_M = make_mask_matrix(use_set)
             self.prox_Mt = make_inverse_mask_matrix(use_set)
