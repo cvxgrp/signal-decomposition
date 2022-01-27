@@ -338,5 +338,6 @@ class Problem():
                            == y_tilde[use_set])
         objective = cvx.Minimize(cvx.sum(costs))
         problem = cvx.Problem(objective, constraints)
+        self._problem_costs = costs
         # print(problem.is_dcp())
         return problem
