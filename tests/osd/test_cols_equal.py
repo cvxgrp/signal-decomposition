@@ -80,17 +80,17 @@ class TestColsEqual(unittest.TestCase):
         p2 = Problem(y2, c2)
         p2.decompose(how='cvx', reset=True, verbose=VERBOSE)
         np.testing.assert_(
-            p2.objective_value <= 0.139,
+            p2.objective_value <= 0.367,
             'actual value: {:.2e}'.format(p2.objective_value)
         )
         p2.decompose(how='admm', reset=True, verbose=VERBOSE)
         np.testing.assert_(
-            p2.objective_value <= 0.317,
+            p2.objective_value <= 0.51,
             'actual value: {:.2e}'.format(p2.objective_value)
         )
         p2.decompose(how='bcd', reset=True, verbose=VERBOSE)
         np.testing.assert_(
-            p2.objective_value <= 0.317,
+            p2.objective_value <= 0.369,
             'actual value: {:.2e}'.format(p2.objective_value)
         )
 
