@@ -33,7 +33,7 @@ def make_columns_equal(component):
         def _get_cost(self):
             f = super()._get_cost()
             def g(x):
-                return f(x[:, 0])
+                return x.shape[1] * f(x[:, 0])
             return g
 
         def prox_op(self, v, weight, rho, use_set=None):
