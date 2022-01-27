@@ -38,6 +38,16 @@ class LinearTrend(Component):
         else:
             A_tilde = A
             v_tilde = v
+        if self.first_val is not None:
+            c = np.zeros_like(v)
+            c[0] = 1
+            C = c.reshape((1, -1)) @ A
+            temp_mat = np.block([
+                [2 * A_tilde.T @ A_tilde, C.T],
+                [C, np.atleast_2d([0])]
+            ])
+            v_tilde = np.r_[2 * A_tilde.T @ v_tilde, [self.first_val]]
+            A_tilde = temp_mat
         x, _, _, _ = np.linalg.lstsq(A_tilde, v_tilde, rcond=None)
-        out = A @ x
+        out = A @ x[:2]
         return out
