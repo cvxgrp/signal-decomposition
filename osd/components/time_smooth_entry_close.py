@@ -82,9 +82,11 @@ class TimeSmoothEntryClose(QuadLin):
                         lambda1 = self.lambda1, lambda2 = self.lambda2,
                         lambda_qp=self.lambda_qp
                     )
-            # P = self.P
             M = self.sqrt_P
-            x_flat = x.flatten()
+            if isinstance(x, np.ndarray):
+                x_flat = x.flatten(order='F')
+            else:
+                x_flat = x.flatten()
             mu = cvx.Variable(T)
             if isinstance(x, np.ndarray):
                 mu.value = np.average(x, axis=1)
@@ -94,12 +96,12 @@ class TimeSmoothEntryClose(QuadLin):
             # P_param = cvx.Parameter(P.shape, PSD=True, value=P)
             # cost = 0.5 * cvx.quad_form(x_tilde, P)
             cost = 0.5 * cvx.sum_squares(np.sqrt(2) * M @ x_tilde)
-            # print(cost.sign, cost.curvature)
             return cost
         return costfunc
 
 
-    def prox_op(self, v, weight, rho, use_set=None, prox_weights=None):
+    def prox_op(self, v, weight, rho, use_set=None, prox_weights=None,
+                prox_counts=None):
         T, p = v.shape
         if self.P is None:
             if self.quasi_period is None:
@@ -147,7 +149,7 @@ class TimeSmoothEntryClose(QuadLin):
             # this helper variable should not be part of the prox distance penalty
             # note that for this class to truly be a subclass of the quad-lin
             # class, the mprox interface must be used!
-            use_ravel = np.r_[np.ones_like(v_ravel, dtype=bool),
+            use_ravel = np.r_[~np.isnan(v_ravel),
                               np.zeros_like(mu, dtype=bool)]
         v_tilde = np.r_[v_ravel, mu]
         # v_tilde[np.isnan(v_tilde)] = 0
@@ -188,7 +190,10 @@ class TimeSmoothPeriodicEntryClose(TimeSmoothEntryClose):
                                        circular=self.circular)
             M = self.sqrt_P
             z = x[:q, :]
-            z_flat = z.flatten()
+            if isinstance(x, np.ndarray):
+                z_flat = z.flatten(order='F')
+            else:
+                z_flat = z.flatten()
             mu = cvx.Variable(q)
             if isinstance(x, np.ndarray):
                 mu.value = np.average(x[:q], axis=1)
