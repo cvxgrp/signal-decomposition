@@ -68,7 +68,7 @@ def run_bcd(data, components, num_iter=50, use_ix=None, X_init=None,
         stopping_tolerance = abs_tol + rel_tol * np.linalg.norm(gradients[0])
         if verbose:
             prog.print(obj_val, r, stopping_tolerance)
-        if r <= stopping_tolerance:
+        if r <= stopping_tolerance and it >= 1:
             if verbose:
                 prog.print(obj_val, r, stopping_tolerance, done=True)
             break
