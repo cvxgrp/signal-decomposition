@@ -107,6 +107,8 @@ def calc_obj(y, X, components, use_ix, residual_term=0):
     :param use_ix: the known index set (Boolean array)
     :return: the scalar problem objective value
     """
+    if use_ix is None:
+        use_ix = ~np.isnan(y)
     K = len(components)
     X_tilde = make_estimate(y, X, use_ix, residual_term=residual_term)
     obj_val = 0
