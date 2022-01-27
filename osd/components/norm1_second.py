@@ -112,6 +112,7 @@ class SparseSecondDiffConvex(Component):
                 )
             )
             problem = cvx.Problem(objective)
+            self._prox_prob = problem
         else:
             params = problem.param_dict
             params['Mv'].value = v[use_set]
