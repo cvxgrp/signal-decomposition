@@ -11,6 +11,8 @@ from osd.components.wrappers import make_columns_equal
 
 rms = lambda x: np.sqrt(np.average(np.power(x, 2)))
 
+VERBOSE = False
+
 class TestVectorProblem(unittest.TestCase):
     def test_cvx(self):
         y, X_real = make_data()
@@ -22,7 +24,7 @@ class TestVectorProblem(unittest.TestCase):
             make_columns_equal(LinearTrend)(first_val=0),
         ]
         problem = Problem(y, components=components)
-        problem.decompose(how='cvx')
+        problem.decompose(how='cvx', verbose=VERBOSE)
         np.testing.assert_(np.isclose(problem.problem.value,
                                       problem.objective_value))
         np.testing.assert_(
@@ -52,7 +54,7 @@ class TestVectorProblem(unittest.TestCase):
             make_columns_equal(LinearTrend)(first_val=0),
         ]
         problem = Problem(y, components=components)
-        problem.decompose(how='admm')
+        problem.decompose(how='admm', verbose=VERBOSE)
         np.testing.assert_(
             problem.objective_value <= 0.0284,
             'actual value: {:.2e}'.format(problem.objective_value)
@@ -83,7 +85,7 @@ class TestVectorProblem(unittest.TestCase):
             make_columns_equal(LinearTrend)(first_val=0),
         ]
         problem = Problem(y, components=components)
-        problem.decompose(how='bcd')
+        problem.decompose(how='bcd', verbose=VERBOSE)
         np.testing.assert_(
             problem.objective_value <= 0.0284,
             'actual value: {:.2e}'.format(problem.objective_value)

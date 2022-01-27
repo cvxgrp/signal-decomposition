@@ -10,6 +10,8 @@ from osd.components import (
 
 rms = lambda x: np.sqrt(np.average(np.power(x, 2)))
 
+VERBOSE = False
+
 class TestSineSquare(unittest.TestCase):
     def test_cvx(self):
         y, X_real = make_data()
@@ -19,7 +21,7 @@ class TestSineSquare(unittest.TestCase):
         c3 = SparseFirstDiffConvex(weight=2e0 / T, vmax=1, vmin=-1)
         components = [c1, c2, c3]
         problem1 = Problem(y, components)
-        problem1.decompose(how='cvx')
+        problem1.decompose(how='cvx', verbose=VERBOSE)
         opt_obj_val = problem1.objective_value
         np.testing.assert_(np.isclose(problem1.problem.value,
                                       opt_obj_val))
@@ -36,7 +38,7 @@ class TestSineSquare(unittest.TestCase):
         c3 = SparseFirstDiffConvex(weight=2e0 / T, vmax=1, vmin=-1)
         components = [c1, c2, c3]
         problem1 = Problem(y, components)
-        problem1.decompose(how='admm')
+        problem1.decompose(how='admm', verbose=VERBOSE)
         opt_obj_val = problem1.objective_value
         np.testing.assert_(opt_obj_val <= 0.096)
         np.testing.assert_(rms(problem1.estimates[0] - X_real[0]) <= 0.1)
@@ -51,7 +53,7 @@ class TestSineSquare(unittest.TestCase):
         c3 = SparseFirstDiffConvex(weight=2e0 / T, vmax=1, vmin=-1)
         components = [c1, c2, c3]
         problem1 = Problem(y, components)
-        problem1.decompose(how='bcd')
+        problem1.decompose(how='bcd', verbose=VERBOSE)
         opt_obj_val = problem1.objective_value
         np.testing.assert_(opt_obj_val <= 0.096)
         np.testing.assert_(rms(problem1.estimates[0] - X_real[0]) <= 0.1)
@@ -67,7 +69,7 @@ class TestSineSquareMasked(unittest.TestCase):
         c3 = SparseFirstDiffConvex(weight=2e0 / T, vmax=1, vmin=-1)
         components = [c1, c2, c3]
         problem1 = Problem(y, components)
-        problem1.decompose(how='cvx')
+        problem1.decompose(how='cvx', verbose=VERBOSE)
         opt_obj_val = problem1.objective_value
         np.testing.assert_(opt_obj_val <= 0.081)
         rms1 = rms(problem1.estimates[0, problem1.use_set] -
@@ -88,7 +90,7 @@ class TestSineSquareMasked(unittest.TestCase):
         c3 = SparseFirstDiffConvex(weight=2e0 / T, vmax=1, vmin=-1)
         components = [c1, c2, c3]
         problem1 = Problem(y, components)
-        problem1.decompose(how='admm')
+        problem1.decompose(how='admm', verbose=VERBOSE)
         opt_obj_val = problem1.objective_value
         np.testing.assert_(opt_obj_val <= 0.081)
         rms1 = rms(problem1.estimates[0, problem1.use_set] -
@@ -109,7 +111,7 @@ class TestSineSquareMasked(unittest.TestCase):
         c3 = SparseFirstDiffConvex(weight=2e0 / T, vmax=1, vmin=-1)
         components = [c1, c2, c3]
         problem1 = Problem(y, components)
-        problem1.decompose(how='bcd')
+        problem1.decompose(how='bcd', verbose=VERBOSE)
         opt_obj_val = problem1.objective_value
         np.testing.assert_(opt_obj_val <= 0.081)
         rms1 = rms(problem1.estimates[0, problem1.use_set] -
