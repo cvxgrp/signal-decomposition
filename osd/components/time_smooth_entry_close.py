@@ -234,8 +234,8 @@ class TimeSmoothPeriodicEntryClose(TimeSmoothEntryClose):
         v_wrapped = v_temp.reshape((num_groups, q, p))
         with warnings.catch_warnings():
             warnings.simplefilter('ignore')
-            counts = np.sum(np.isnan(v_wrapped), axis=0)
-            scales = 1 - (counts / num_groups)
+            prox_counts = np.sum(~np.isnan(v_wrapped), axis=0)
+            scales = prox_counts / num_groups
             v_bar = np.nanmean(v_wrapped, axis=0)
             v_bar[np.isnan(v_bar)] = 0
         if use_set is not None:
