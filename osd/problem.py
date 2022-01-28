@@ -150,7 +150,7 @@ class Problem():
             if verbose:
                 print('\npolishing...\n')
             result = run_bcd(
-                self.data, self.components, num_iter=10, use_ix=use_set,
+                self.data, self.components, num_iter=num_iter, use_ix=use_set,
                 abs_tol=abs_tol, rel_tol=rel_tol, X_init=result['X'],
                 verbose=verbose
             )
