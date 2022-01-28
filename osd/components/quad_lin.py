@@ -68,14 +68,15 @@ class QuadLin(Component):
                 prox_counts=None):
         c = self._c
         u = self._u
-        if use_set is not None:
-            self.prox_M = make_mask_matrix(use_set)
-            self.prox_Mt = make_inverse_mask_matrix(use_set)
-            self.prox_MtM = make_masked_identity_matrix(use_set)
-            # print(v.shape, use_set.shape, self.prox_MtM.shape)
         cond1 = c is None
         cond2 = self._last_weight != weight
         cond3 = self._last_rho != rho
+        if use_set is not None and cond1:
+            self.prox_M = make_mask_matrix(use_set)
+            self.prox_Mt = make_inverse_mask_matrix(use_set)
+            self.prox_MtM = make_masked_identity_matrix(use_set)
+            if prox_weights is not None:
+                self.prox_MtM.data *= prox_weights[prox_weights != 0]
         if cond1 or cond2 or cond3:
             # print('factorizing the matrix...')
             n = len(v)
@@ -83,8 +84,6 @@ class QuadLin(Component):
                 temp_mat = sp.identity(self.P.shape[0])
             else:
                 temp_mat = self.prox_MtM
-            if prox_weights is not None:
-                temp_mat.data *= prox_weights[prox_weights != 0]
             M = weight * self.P + rho * temp_mat
             if self.F is not None:
                 A = sp.csc_matrix(self.F)
