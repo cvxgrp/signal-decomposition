@@ -30,7 +30,7 @@ class TestVectorPeriodicProblem(unittest.TestCase):
                                       problem.objective_value))
         np.testing.assert_(
             problem.objective_value <= 0.0167,
-            'actual value: {:.2e}'.format(problem.objective_value)
+            'actual value: {:.3e}'.format(problem.objective_value)
         )
 
     def test_admm(self):
@@ -47,7 +47,7 @@ class TestVectorPeriodicProblem(unittest.TestCase):
         problem.decompose(how='admm', verbose=VERBOSE)
         np.testing.assert_(
             problem.objective_value <= 0.0167,
-            'actual value: {:.2e}'.format(problem.objective_value)
+            'actual value: {:.3e}'.format(problem.objective_value)
         )
 
     def test_bcd(self):
@@ -64,7 +64,7 @@ class TestVectorPeriodicProblem(unittest.TestCase):
         problem.decompose(how='bcd', verbose=VERBOSE)
         np.testing.assert_(
             problem.objective_value <= 0.0167,
-            'actual value: {:.2e}'.format(problem.objective_value)
+            'actual value: {:.3e}'.format(problem.objective_value)
         )
 
 

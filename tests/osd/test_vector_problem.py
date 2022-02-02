@@ -29,7 +29,7 @@ class TestVectorProblem(unittest.TestCase):
                                       problem.objective_value))
         np.testing.assert_(
             problem.objective_value <= 0.0284,
-            'actual value: {:.2e}'.format(problem.objective_value)
+            'actual value: {:.3e}'.format(problem.objective_value)
         )
         # np.testing.assert_(
         #     rms(problem.estimates[0] - X_real[0]) <= 0.11,
@@ -57,7 +57,7 @@ class TestVectorProblem(unittest.TestCase):
         problem.decompose(how='admm', verbose=VERBOSE)
         np.testing.assert_(
             problem.objective_value <= 0.0284,
-            'actual value: {:.2e}'.format(problem.objective_value)
+            'actual value: {:.3e}'.format(problem.objective_value)
         )
         # np.testing.assert_(
         #     rms(problem.estimates[0] - X_real[0]) <= 0.11,
@@ -88,7 +88,7 @@ class TestVectorProblem(unittest.TestCase):
         problem.decompose(how='bcd', verbose=VERBOSE)
         np.testing.assert_(
             problem.objective_value <= 0.0284,
-            'actual value: {:.2e}'.format(problem.objective_value)
+            'actual value: {:.3e}'.format(problem.objective_value)
         )
         # np.testing.assert_(
         #     rms(problem.estimates[0] - X_real[0]) <= 0.11,
