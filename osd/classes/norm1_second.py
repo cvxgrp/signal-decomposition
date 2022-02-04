@@ -101,7 +101,8 @@ class SparseSecondDiffConvex(Component):
             use_set = np.ones_like(v, dtype=bool)
         problem = self._prox_prob
         ic = self.internal_scale
-        if problem is None:
+        len_Mv = len(problem.param_dict['Mv'].value)
+        if problem is None or np.sum(use_set) != len_Mv:
             x = cvx.Variable(len(v))
             Mv = cvx.Parameter(np.sum(use_set), value=v[use_set], name='Mv')
             w = cvx.Parameter(value=weight, name='weight', nonneg=True)

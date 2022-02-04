@@ -46,7 +46,11 @@ class ApproxPeriodic(Component):
         cond1 = c is None
         cond2 = self._last_weight != weight
         cond3 = self._last_rho != rho
-        if cond1 or cond2 or cond3:
+        cond4 = False
+        if use_set is not None:
+            if not np.alltrue(use_set == self._mask.use_set):
+                cond4 = True
+        if np.any([cond1, cond2, cond3, cond4]):
             n = len(v)
             I = np.eye(n)
             p = self._approx_period

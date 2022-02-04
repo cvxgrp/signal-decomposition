@@ -180,10 +180,9 @@ class Problem():
         return
 
 
-    def holdout_validation(self, holdout=0.2, seed=None, cost=None,
-                           rho=None, rho0_scale=None, how=None,
-                           num_iter=1e3, verbose=True, reset=True,
-                           X_init=None, u_init=None,
+    def holdout_validation(self, holdout=0.2, seed=None, rho=None,
+                           rho0_scale=None, how=None, num_iter=1e3,
+                           verbose=True, reset=True, X_init=None, u_init=None,
                            stop_early=True, abs_tol=1e-5, rel_tol=1e-5,
                            **cvx_kwargs):
         if seed is not None:
@@ -209,18 +208,11 @@ class Problem():
                        reset=reset, X_init=X_init, u_init=u_init,
                        stop_early=stop_early, abs_tol=abs_tol, rel_tol=rel_tol,
                        **cvx_kwargs)
-        est_array = np.array(self.components)
-        hold_est = np.sum(est_array[:, hold_set], axis=0)
+        y_hat = np.sum(self.components[:, hold_set], axis=0)
         hold_y = self.data[hold_set]
-        residuals = hold_y - hold_est
-        if cost is None:
-            resid_cost = self.classes[self.residual_term].cost
-        elif cost == 'l1':
-            resid_cost = compose(cvx.sum, cvx.abs)
-        elif cost == 'l2':
-            resid_cost = cvx.sum_squares
-        holdout_cost = resid_cost(residuals).value
-        return holdout_cost.item() / len(residuals)
+        residuals = hold_y - y_hat
+        holdout_cost = np.average(np.power(residuals, 2))
+        return holdout_cost
 
     def plot_decomposition(self, x_series=None, X_real=None, figsize=(10, 8),
                            label='estimated', exponentiate=False,

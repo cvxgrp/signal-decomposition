@@ -62,7 +62,13 @@ class QuadLin(Component):
                 prox_counts=None):
         c = self._c
         u = self._u
+        # cached problem does not exist
         cond1 = c is None
+        # check if the sparsity pattern has changed. if so, don't use cached
+        # problem
+        if not cond1 and use_set is not None:
+            if (self.prox_M != make_mask_matrix(use_set)).nnz > 0:
+                cond1 = True
         cond2 = self._last_weight != weight
         cond3 = self._last_rho != rho
         if use_set is not None and cond1:
