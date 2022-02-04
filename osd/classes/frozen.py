@@ -12,7 +12,7 @@ of the input.
 '''
 
 import numpy as np
-from osd.components.component import Component
+from osd.classes.component import Component
 
 class Frozen(Component):
 

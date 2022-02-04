@@ -21,12 +21,12 @@ def run_admm(data, components, num_iter=50, rho=None, use_ix=None, verbose=True,
     Serial implementation of SD ADMM algorithm.
 
     :param data: numpy array containing problem data
-    :param components: list of osd.components class objects
+    :param components: list of osd.classes class objects
     :param num_iter: (int) the number of ADMM iterations to perform
     :param rho: (float) the ADMM learning rate
     :param use_ix: (None or Boolean array) the set of known index values
     :param verbose: (Boolean) print progress to screen
-    :param randomize_start: (Boolean) Randomize initialization of components
+    :param randomize_start: (Boolean) Randomize initialization of classes
     :return:
     """
     y = data

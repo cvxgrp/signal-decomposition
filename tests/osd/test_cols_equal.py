@@ -2,13 +2,13 @@ import unittest
 import numpy as np
 from scipy.stats import laplace_asymmetric
 from osd import Problem
-from osd.components import (
+from osd.classes import (
     MeanSquareSmall,
     AsymmetricNoise,
     ConstantChunks,
     LinearTrend
 )
-from osd.components.wrappers import make_columns_equal
+from osd.classes.wrappers import make_columns_equal
 
 VERBOSE = False
 

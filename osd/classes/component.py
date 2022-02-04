@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 ''' Component abstract base class module
 
-This module contains the abstract base class for components
+This module contains the abstract base class for classes
 
 Author: Bennet Meyers
 '''

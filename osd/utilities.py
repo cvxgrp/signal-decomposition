@@ -85,7 +85,7 @@ def make_estimate(y, X, use_ix, residual_term=0):
     component estimates
 
     :param y: numpy array containing problem data
-    :param X: current estimate of decomposed signal components from ADMM
+    :param X: current estimate of decomposed signal classes from ADMM
     :param use_ix: the known index set (Boolean array)
     :return: the estimate with the first component replaced by the residuals
     """
@@ -103,7 +103,7 @@ def calc_obj(y, X, components, use_ix, residual_term=0):
     Calculate the current objective value of the problem
 
     :param y: numpy array containing problem data
-    :param X: current estimate of decomposed signal components from ADMM
+    :param X: current estimate of decomposed signal classes from ADMM
     :param use_ix: the known index set (Boolean array)
     :return: the scalar problem objective value
     """

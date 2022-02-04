@@ -15,7 +15,7 @@ Author: Bennet Meyers
 
 import scipy.sparse as sp
 import numpy as np
-from osd.components.component import Component
+from osd.classes.component import Component
 from osd.masking import (
     fill_forward,
     fill_backward,

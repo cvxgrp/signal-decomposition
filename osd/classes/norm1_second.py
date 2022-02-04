@@ -23,7 +23,7 @@ from functools import partial
 import numpy as np
 from scipy.signal import find_peaks
 import warnings
-from osd.components.component import Component
+from osd.classes.component import Component
 from osd.utilities import compose
 from osd.masking import make_masked_identity_matrix
 

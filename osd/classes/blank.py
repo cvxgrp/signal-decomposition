@@ -8,7 +8,7 @@ Author: Bennet Meyers
 
 import cvxpy as cvx
 import numpy as np
-from osd.components.component import Component
+from osd.classes.component import Component
 
 class Blank(Component):
 

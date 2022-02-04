@@ -36,7 +36,7 @@ def run_bcd(data, components, num_iter=50, use_ix=None, X_init=None,
     indices = np.arange(K)
     X0_next = np.copy(X[0, :])
     obj = []
-    # obj.append(calc_obj(y, X, components, use_ix, residual_term=0))
+    # obj.append(calc_obj(y, X, classes, use_ix, residual_term=0))
     gradients = np.zeros_like(X)
     residual = []
     if verbose:

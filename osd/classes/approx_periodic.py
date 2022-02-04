@@ -9,7 +9,7 @@ Author: Bennet Meyers
 import scipy.linalg as spl
 import numpy as np
 import cvxpy as cvx
-from osd.components.component import Component
+from osd.classes.component import Component
 from osd.masking import Mask
 from osd.utilities import compose
 

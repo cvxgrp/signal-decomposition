@@ -8,7 +8,7 @@ Author: Bennet Meyers
 
 from scipy import sparse
 import numpy as np
-from osd.components.component import Component
+from osd.classes.component import Component
 
 class MarkovChain(Component):
 

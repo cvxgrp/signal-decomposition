@@ -12,17 +12,11 @@ Author: Bennet Meyers
 import scipy.sparse as sp
 import numpy as np
 import cvxpy as cvx
-from functools import partial
-from osd.components.component import Component
+from osd.classes.component import Component
 from osd.masking import (
     make_masked_identity_matrix,
     make_mask_matrix,
     make_inverse_mask_matrix
-)
-from osd.utilities import compose
-from osd.components.quadlin_utilities import (
-    build_constraint_matrix,
-    build_constraint_rhs
 )
 
 class QuadLin(Component):

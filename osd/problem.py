@@ -19,33 +19,32 @@ from osd.utilities import compose, calc_obj
 import matplotlib.pyplot as plt
 
 class Problem():
-    def __init__(self, data, components, residual_term=0):
+    def __init__(self, data, classes, residual_term=0):
         self.data = data
         if len(data.shape) == 1:
             self.T = data.shape[0]
             self.p =1
         else:
             self.T, self.p = data.shape
-        self.components = [c() if type(c) is abc.ABCMeta else c
-                           for c in components]
-        self.num_components = len(components)
-        self.parameters = {i: c.parameters for i, c in enumerate(self.components)
+        self.classes = [c() if type(c) is abc.ABCMeta else c
+                        for c in classes]
+        self.K = len(classes)
+        self.parameters = {i: c.parameters for i, c in enumerate(self.classes)
                            if c.parameters is not None}
         self.num_parameters = int(
             np.sum([len(value) if value is not None else 0
                     for key, value in self.parameters.items()])
         )
-        self.estimates = None
+        self.components = None
         self.problem = None
         self.admm_result = None
         self.bcd_result = None
-        self.K = self.num_components
         self.residual_term = residual_term # typically 0
         self.known_set = ~np.isnan(data)
         self.q = np.sum(self.known_set)
         # CVXPY objects (not used for ADMM)
         self.__weights = cvx.Parameter(shape=self.K, nonneg=True,
-                                     value=[c.weight for c in self.components])
+                                       value=[c.weight for c in self.classes])
         self.use_set = None
 
     def __repr__(self):
@@ -58,8 +57,8 @@ class Problem():
 
     @property
     def objective_value(self):
-        if self.estimates is not None:
-            obj_val = calc_obj(self.data, self.estimates, self.components,
+        if self.components is not None:
+            obj_val = calc_obj(self.data, self.components, self.classes,
                                self.use_set)
             return obj_val
         else:
@@ -71,7 +70,7 @@ class Problem():
 
     @property
     def is_convex(self):
-        return np.alltrue([c.is_convex for c in self.components])
+        return np.alltrue([c.is_convex for c in self.classes])
 
     def decompose(self, use_set=None, rho=None, rho0_scale=None, how=None,
                   num_iter=1e3, verbose=True, reset=False,
@@ -81,14 +80,14 @@ class Problem():
         if rho0_scale is None:
             rho0_scale = 1
         if rho is None:
-            rho = 2 * rho0_scale / (self.data.size * self.components[0].weight)
+            rho = 2 * rho0_scale / (self.data.size * self.classes[0].weight)
         num_iter = int(num_iter)
         if use_set is None:
             use_set = self.known_set
         else:
             use_set = np.logical_and(use_set, self.known_set)
         self.use_set = use_set
-        self.set_weights([c.weight for c in self.components])
+        self.set_weights([c.weight for c in self.classes])
         if how is None:
             if self.is_convex:
                 how = 'bcd'
@@ -102,9 +101,9 @@ class Problem():
         if np.all([
             X_init is None,
             reset is False,
-            self.estimates is not None,
+            self.components is not None,
         ]):
-            X_init = self.estimates
+            X_init = self.components
 
         if self.is_convex and how.lower() in ['cvx', 'cvxpy']:
             if self.problem is None or reset or np.any(use_set != self.use_set):
@@ -122,27 +121,27 @@ class Problem():
             ests = np.array([x.value for x in
                              np.asarray(problem.variables())[sorted_order]
                              if 'x_' in x.name()])
-            self.estimates = ests
+            self.components = ests
         elif how.lower() in ['admm', 'sd-admm']:
             result = run_admm(
-                self.data, self.components, num_iter=num_iter, rho=rho,
+                self.data, self.classes, num_iter=num_iter, rho=rho,
                 use_ix=use_set, verbose=verbose, X_init=X_init, u_init=u_init,
                 stop_early=stop_early, abs_tol=abs_tol, rel_tol=rel_tol,
                 residual_term=self.residual_term
             )
             self.admm_result = result
-            self.estimates = result['X']
+            self.components = result['X']
         elif how.lower() in ['bcd', 'sd-bcd']:
             result = run_bcd(
-                self.data, self.components, num_iter=num_iter, use_ix=use_set,
+                self.data, self.classes, num_iter=num_iter, use_ix=use_set,
                 abs_tol=abs_tol, rel_tol=rel_tol, X_init=X_init,
                 verbose=verbose
             )
             self.bcd_result = result
-            self.estimates = result['X']
+            self.components = result['X']
         elif how.lower() in ['admm-polish', 'admm-bcd']:
             result = run_admm(
-                self.data, self.components, num_iter=num_iter, rho=rho,
+                self.data, self.classes, num_iter=num_iter, rho=rho,
                 use_ix=use_set, verbose=verbose, X_init=X_init, u_init=u_init,
                 stop_early=stop_early, abs_tol=abs_tol, rel_tol=rel_tol,
                 residual_term=self.residual_term
@@ -152,7 +151,7 @@ class Problem():
             if verbose:
                 print('\npolishing...\n')
             result = run_bcd(
-                self.data, self.components, num_iter=num_iter, use_ix=use_set,
+                self.data, self.classes, num_iter=num_iter, use_ix=use_set,
                 abs_tol=abs_tol, rel_tol=rel_tol, X_init=result['X'],
                 verbose=verbose
             )
@@ -161,7 +160,7 @@ class Problem():
                 self.admm_result[key] = np.r_[
                     self.admm_result[key], self.bcd_result[key]
                 ]
-            self.estimates = result['X']
+            self.components = result['X']
         elif not self.is_convex and how.lower() in ['cvx', 'cvxpy']:
             m1 = 'This problem is non-convex and not solvable with CVXPY. '
             m2 = 'Please try solving with ADMM.'
@@ -176,13 +175,13 @@ class Problem():
             self.__weights.value = weights
         elif len(self.__weights.value) == len(weights) + 1:
             self.__weights.value = np.r_[[1], weights]
-        for c, w in zip(self.components, self.weights):
+        for c, w in zip(self.classes, self.weights):
             c.set_weight(w)
         return
 
 
     def holdout_validation(self, holdout=0.2, seed=None, cost=None,
-                           use_set=None, rho=None, rho0_scale=None, how=None,
+                           rho=None, rho0_scale=None, how=None,
                            num_iter=1e3, verbose=True, reset=True,
                            X_init=None, u_init=None,
                            stop_early=True, abs_tol=1e-5, rel_tol=1e-5,
@@ -210,13 +209,12 @@ class Problem():
                        reset=reset, X_init=X_init, u_init=u_init,
                        stop_early=stop_early, abs_tol=abs_tol, rel_tol=rel_tol,
                        **cvx_kwargs)
-        # TODO: i got up to here
-        est_array = np.array(self.estimates)
+        est_array = np.array(self.components)
         hold_est = np.sum(est_array[:, hold_set], axis=0)
         hold_y = self.data[hold_set]
         residuals = hold_y - hold_est
         if cost is None:
-            resid_cost = self.components[self.residual_term].cost
+            resid_cost = self.classes[self.residual_term].cost
         elif cost == 'l1':
             resid_cost = compose(cvx.sum, cvx.abs)
         elif cost == 'l2':
@@ -227,7 +225,7 @@ class Problem():
     def plot_decomposition(self, x_series=None, X_real=None, figsize=(10, 8),
                            label='estimated', exponentiate=False,
                            skip=None):
-        if self.estimates is None:
+        if self.components is None:
             print('No decomposition available.')
             return
         if not exponentiate:
@@ -241,10 +239,10 @@ class Problem():
             nd = len(skip)
         else:
             nd = 0
-        K = len(self.components)
+        K = len(self.classes)
         fig, ax = plt.subplots(nrows=K + 1 - nd, sharex=True, figsize=figsize)
         if x_series is None:
-            xs = np.arange(self.estimates.shape[1])
+            xs = np.arange(self.components.shape[1])
         else:
             xs = np.copy(x_series)
         ax_ix = 0
@@ -252,7 +250,7 @@ class Problem():
             if skip is not None and k in skip:
                 continue
             if k == 0:
-                est = self.estimates[k]
+                est = self.components[k]
                 ax[ax_ix].plot(xs, f(est), label=label, linewidth=1,
                                ls='none', marker='.', ms=2)
                 ax[ax_ix].set_title(base + '^{}$'.format(k + 1))
@@ -260,7 +258,7 @@ class Problem():
                     true = X_real[k]
                     ax[ax_ix].plot(true, label='true', linewidth=1)
             elif k < K:
-                est = self.estimates[k]
+                est = self.components[k]
                 ax[ax_ix].plot(xs, f(est), label=label, linewidth=1)
                 ax[ax_ix].set_title(base + '^{}$'.format(k + 1))
                 if X_real is not None:
@@ -273,8 +271,8 @@ class Problem():
                     lbl = 'observed, $\\tilde{y}$'
                 ax[ax_ix].plot(xs, f(self.data), label=lbl,
                            linewidth=1, color='green')
-                ax[ax_ix].plot(xs, f(np.sum(self.estimates[1:], axis=0)),
-                           label='denoised estimate', linewidth=1)
+                ax[ax_ix].plot(xs, f(np.sum(self.components[1:], axis=0)),
+                               label='denoised estimate', linewidth=1)
                 if X_real is not None:
                     ax[ax_ix].plot(xs, np.sum(X_real[1:], axis=0), label='true',
                                linewidth=1)
@@ -341,20 +339,20 @@ class Problem():
         y_tilde = np.copy(self.data)
         y_tilde[np.isnan(y_tilde)] = 0
         T = self.T
-        K = self.num_components
+        K = self.K
         weights = self.__weights
         if p == 1:
             xs = [cvx.Variable(T, name='x_{}'.format(i)) for i in range(K)]
         else:
             xs = [cvx.Variable((T, p), name='x_{}'.format(i)) for i in range(K)]
-        costs = [c.cost(x) for c, x in zip(self.components, xs)]
+        costs = [c.cost(x) for c, x in zip(self.classes, xs)]
         costs = [weights[i] * cost for i, cost in enumerate(costs)]
         # print([c.is_dcp() for c in costs])
         # print([c.sign for c in costs])
         # print([c.curvature for c in costs])
         # print(cvx.sum(costs).is_dcp())
         constraints = [
-            c.make_constraints(x, T, p) for c, x in zip(self.components, xs)
+            c.make_constraints(x, T, p) for c, x in zip(self.classes, xs)
         ]
         constraints = list(chain.from_iterable(constraints))
         constraints.append(cvx.sum([x for x in xs], axis=0)[use_set]

@@ -15,7 +15,7 @@ Author: Bennet Meyers
 
 import cvxpy as cvx
 import scipy.sparse as sp
-from osd.components.component import Component
+from osd.classes.component import Component
 from osd.utilities import compose
 import numpy as np
 import warnings

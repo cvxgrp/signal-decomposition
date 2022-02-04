@@ -2,12 +2,12 @@ import unittest
 from pathlib import Path
 import numpy as np
 from osd import Problem
-from osd.components import (
+from osd.classes import (
     MeanSquareSmall,
     TimeSmoothPeriodicEntryClose,
     LinearTrend
 )
-from osd.components.wrappers import make_columns_equal
+from osd.classes.wrappers import make_columns_equal
 
 rms = lambda x: np.sqrt(np.average(np.power(x, 2)))
 
@@ -17,14 +17,14 @@ class TestVectorPeriodicProblem(unittest.TestCase):
     def test_cvx(self):
         y, X_real = make_data()
         period = 17
-        components = [
+        classes = [
             MeanSquareSmall(size=y.size),
             TimeSmoothPeriodicEntryClose(
                 lambda1=1e2, lambda2=1e-2, weight=5e-3 / y.size, period=period
             ),
             make_columns_equal(LinearTrend)(first_val=0),
         ]
-        problem = Problem(y, components=components)
+        problem = Problem(y, classes=classes)
         problem.decompose(how='cvx', verbose=VERBOSE)
         np.testing.assert_(np.isclose(problem.problem.value,
                                       problem.objective_value))
@@ -36,14 +36,14 @@ class TestVectorPeriodicProblem(unittest.TestCase):
     def test_admm(self):
         y, X_real = make_data()
         period = 17
-        components = [
+        classes = [
             MeanSquareSmall(size=y.size),
             TimeSmoothPeriodicEntryClose(
                 lambda1=1e2, lambda2=1e-2, weight=5e-3 / y.size, period=period
             ),
             make_columns_equal(LinearTrend)(first_val=0),
         ]
-        problem = Problem(y, components=components)
+        problem = Problem(y, classes=classes)
         problem.decompose(how='admm', verbose=VERBOSE)
         np.testing.assert_(
             problem.objective_value <= 0.0167,
@@ -53,14 +53,14 @@ class TestVectorPeriodicProblem(unittest.TestCase):
     def test_bcd(self):
         y, X_real = make_data()
         period = 17
-        components = [
+        classes = [
             MeanSquareSmall(size=y.size),
             TimeSmoothPeriodicEntryClose(
                 lambda1=1e2, lambda2=1e-2, weight=5e-3 / y.size, period=period
             ),
             make_columns_equal(LinearTrend)(first_val=0),
         ]
-        problem = Problem(y, components=components)
+        problem = Problem(y, classes=classes)
         problem.decompose(how='bcd', verbose=VERBOSE)
         np.testing.assert_(
             problem.objective_value <= 0.0167,

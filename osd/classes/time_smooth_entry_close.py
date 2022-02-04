@@ -17,8 +17,8 @@ import scipy.sparse as sp
 import numpy as np
 import cvxpy as cvx
 import warnings
-from osd.components.quad_lin import QuadLin
-from osd.components.quadlin_utilities import (
+from osd.classes.quad_lin import QuadLin
+from osd.classes.quadlin_utilities import (
     build_constraint_matrix,
     build_constraint_rhs,
     make_periodic_A

@@ -16,7 +16,7 @@ Author: Bennet Meyers
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
-from osd.components.component import Component
+from osd.classes.component import Component
 
 class OneJump(Component):
     def __init__(self, start_val=None, end_val=None, min_fraction=None,

@@ -19,7 +19,7 @@ Author: Bennet Meyers
 import numpy as np
 import cvxpy as cvx
 from functools import partial
-from osd.components.component import Component
+from osd.classes.component import Component
 from osd.utilities import compose
 
 class SparseFirstDiffConvex(Component):
