@@ -29,7 +29,7 @@ class LinearTrend(Component):
         cost = lambda x: 0
         return cost
 
-    def prox_op(self, v, weight, rho, use_set=None, prox_counts=None):
+    def prox_op(self, v, weight, rho, use_set=None, prox_weights=None):
         T = len(v)
         A = np.c_[np.ones(T), np.arange(T)]
         if use_set is not None:
@@ -38,6 +38,12 @@ class LinearTrend(Component):
         else:
             A_tilde = A
             v_tilde = v
+        if prox_weights is not None:
+            pw = prox_weights[use_set] if use_set is not None else prox_weights
+            A_tilde = A_tilde.T
+            A_tilde *= pw
+            A_tilde = A_tilde.T
+            v_tilde *= pw
         if self.first_val is not None:
             c = np.zeros_like(v)
             c[0] = 1
