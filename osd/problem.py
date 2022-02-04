@@ -20,10 +20,12 @@ import matplotlib.pyplot as plt
 
 class Problem():
     def __init__(self, data, components, residual_term=0):
-
-        # TODO: accept vector-valued data
         self.data = data
-        self.T = data.shape[0]
+        if len(data.shape) == 1:
+            self.T = data.shape[0]
+            self.p =1
+        else:
+            self.T, self.p = data.shape
         self.components = [c() if type(c) is abc.ABCMeta else c
                            for c in components]
         self.num_components = len(components)
@@ -37,13 +39,22 @@ class Problem():
         self.problem = None
         self.admm_result = None
         self.bcd_result = None
-        K = self.num_components
+        self.K = self.num_components
         self.residual_term = residual_term # typically 0
         self.known_set = ~np.isnan(data)
+        self.q = np.sum(self.known_set)
         # CVXPY objects (not used for ADMM)
-        self.__weights = cvx.Parameter(shape=K, nonneg=True,
+        self.__weights = cvx.Parameter(shape=self.K, nonneg=True,
                                      value=[c.weight for c in self.components])
         self.use_set = None
+
+    def __repr__(self):
+        st = " SD problem instance at {} (K={}, T={}, p={}, q={})>"
+        if self.is_convex:
+            st = "<convex" + st
+        else:
+            st = "<nonconvex" + st
+        return st.format(hex(id(self)), self.K, self.T, self.p, self.q)
 
     @property
     def objective_value(self):
