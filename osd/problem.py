@@ -73,15 +73,6 @@ class Problem():
     def is_convex(self):
         return np.alltrue([c.is_convex for c in self.components])
 
-    def set_weights(self, weights):
-        if len(self.__weights.value) == len(weights):
-            self.__weights.value = weights
-        elif len(self.__weights.value) == len(weights) + 1:
-            self.__weights.value = np.r_[[1], weights]
-        for c, w in zip(self.components, self.weights):
-            c.set_weight(w)
-        return
-
     def decompose(self, use_set=None, rho=None, rho0_scale=None, how=None,
                   num_iter=1e3, verbose=True, reset=False,
                   X_init=None, u_init=None,
@@ -180,25 +171,46 @@ class Problem():
             m2 = "from 'cvxpy', 'bcd', 'admm', or 'admm-polish'. "
             print(m1 + m2)
 
+    def set_weights(self, weights):
+        if len(self.__weights.value) == len(weights):
+            self.__weights.value = weights
+        elif len(self.__weights.value) == len(weights) + 1:
+            self.__weights.value = np.r_[[1], weights]
+        for c, w in zip(self.components, self.weights):
+            c.set_weight(w)
+        return
 
-    def holdout_validation(self, holdout=0.2, seed=None, solver='ECOS',
-                               reuse=False, cost=None, admm=False):
+
+    def holdout_validation(self, holdout=0.2, seed=None, cost=None,
+                           use_set=None, rho=None, rho0_scale=None, how=None,
+                           num_iter=1e3, verbose=True, reset=True,
+                           X_init=None, u_init=None,
+                           stop_early=True, abs_tol=1e-5, rel_tol=1e-5,
+                           **cvx_kwargs):
         if seed is not None:
             np.random.seed(seed)
-        T = self.T
-        known_ixs = np.arange(T)[self.known_set]
+        size = self.T * self.p
+        if self.p == 1:
+            known_ixs = np.arange(size)[self.known_set]
+        else:
+            known_ixs = np.arange(size)[self.known_set.ravel(order='F')]
         train_ixs, test_ixs = train_test_split(
             known_ixs, test_size=holdout, random_state=seed
         )
 
-        hold_set = np.zeros(T, dtype=bool)
-        use_set = np.zeros(T, dtype=bool)
+        hold_set = np.zeros(size, dtype=bool)
+        use_set = np.zeros(size, dtype=bool)
         hold_set[test_ixs] = True
         use_set[train_ixs] = True
-        if not reuse:
-            self.decompose(solver=solver, use_set=use_set, admm=admm, reset=True)
-        else:
-            self.decompose(solver=solver, admm=admm, reset=False)
+        if self.p != 1:
+            hold_set = hold_set.reshape((self.T, self.p), order='F')
+            use_set = use_set.reshape((self.T, self.p), order='F')
+        self.decompose(use_set=use_set, rho=rho, rho0_scale=rho0_scale,
+                       how=how, num_iter=num_iter, verbose=verbose,
+                       reset=reset, X_init=X_init, u_init=u_init,
+                       stop_early=stop_early, abs_tol=abs_tol, rel_tol=rel_tol,
+                       **cvx_kwargs)
+        # TODO: i got up to here
         est_array = np.array(self.estimates)
         hold_est = np.sum(est_array[:, hold_set], axis=0)
         hold_y = self.data[hold_set]
