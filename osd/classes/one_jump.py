@@ -16,7 +16,7 @@ Author: Bennet Meyers
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
-from osd.components.component import Component
+from osd.classes.component import Component
 
 class OneJump(Component):
     def __init__(self, start_val=None, end_val=None, min_fraction=None,
@@ -78,7 +78,7 @@ class OneJump(Component):
             return x_no_jump
 
 
-def find_jump(signal, min_fraction=None, use_set=None):
+def find_jump(signal, min_fraction=None, use_set=None, prox_counts=None):
     """
     Find the breakpoint in a scalar signal that minimizes the total variance in
     both signal segments

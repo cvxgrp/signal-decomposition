@@ -7,7 +7,7 @@ Author: Bennet Meyers
 
 import cvxpy as cvx
 import numpy as np
-from osd.components.component import Component
+from osd.classes.component import Component
 
 class MeanSquareSmall(Component):
 
@@ -24,7 +24,7 @@ class MeanSquareSmall(Component):
         f = lambda x: cvx.sum_squares(x) / self.size
         return f
 
-    def prox_op(self, v, weight, rho, use_set=None):
+    def prox_op(self, v, weight, rho, use_set=None, prox_counts=None):
         a = (2 * weight) / (rho * self.size)
         r = 1 / (1 + a)
         out = r * np.asarray(v)

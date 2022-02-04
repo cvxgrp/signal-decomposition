@@ -22,13 +22,14 @@ class Mask():
         self.q = np.sum(use_set)
         self.M = make_mask_matrix(use_set)
         self.M_star = make_inverse_mask_matrix(use_set)
+        self.MstM = make_masked_identity_matrix(use_set)
 
     def mask(self, v):
         if self.p == 1:
-            v = np.copy(v)
+            vi = v
         else:
-            v = v.ravel(order='F')
-        out = self.M @ v
+            vi = v.ravel(order='F')
+        out = self.M @ vi
         return out
 
     def unmask(self, v):
@@ -37,6 +38,18 @@ class Mask():
             T, p = self.T, self.p
             out = out.reshape((T, p), order='F')
         return out
+
+    def zero_fill(self, v):
+        if self.p == 1:
+            vi = v
+        else:
+            vi = v.ravel(order='F')
+        out = self.MstM @ vi
+        if self.p != 1:
+            T, p = self.T, self.p
+            out = out.reshape((T, p), order='F')
+        return out
+
 
 def make_mask_matrix(use_set):
     if len(use_set.shape) == 1:
@@ -48,7 +61,7 @@ def make_mask_matrix(use_set):
     data = np.ones(K)
     i = np.arange(K)
     j = np.arange(n)
-    j = j[use_set]
+    j = j[us]
     M = sp.coo_matrix((data, (i, j)), shape=(K, n))
     return M
 
@@ -62,7 +75,7 @@ def make_inverse_mask_matrix(use_set):
     data = np.ones(K)
     j = np.arange(K)
     i = np.arange(n)
-    i = i[use_set]
+    i = i[us]
     M = sp.coo_matrix((data, (i, j)), shape=(n, K))
     return M
 

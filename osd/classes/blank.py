@@ -8,7 +8,7 @@ Author: Bennet Meyers
 
 import cvxpy as cvx
 import numpy as np
-from osd.components.component import Component
+from osd.classes.component import Component
 
 class Blank(Component):
 
@@ -23,5 +23,5 @@ class Blank(Component):
     def _get_cost(self):
         return lambda x: 0
 
-    def prox_op(self, v, weight, rho, use_set=None):
+    def prox_op(self, v, weight, rho, use_set=None, prox_counts=None):
         return v

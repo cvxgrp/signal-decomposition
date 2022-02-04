@@ -12,7 +12,7 @@ of the input.
 '''
 
 import numpy as np
-from osd.components.component import Component
+from osd.classes.component import Component
 
 class Frozen(Component):
 
@@ -38,7 +38,7 @@ class Frozen(Component):
         cost = lambda x: 0
         return cost
 
-    def prox_op(self, v, weight, rho, use_set=None):
+    def prox_op(self, v, weight, rho, use_set=None, prox_counts=None):
         if not self.is_periodic:
             return self.x_frozen
         elif self.x_frozen_periodic is None:

@@ -14,9 +14,8 @@ Author: Bennet Meyers
 '''
 
 import cvxpy as cvx
-import osqp
 import scipy.sparse as sp
-from osd.components.component import Component
+from osd.classes.component import Component
 from osd.utilities import compose
 import numpy as np
 import warnings
@@ -51,7 +50,7 @@ class Sparse(Component):
         cost = compose(cvx.sum, cvx.abs)
         return cost
 
-    def prox_op(self, v, weight, rho, use_set=None):
+    def prox_op(self, v, weight, rho, use_set=None, prox_counts=None):
         if self.chunk_size is None:
             kappa = weight / rho
             t1 = v - kappa

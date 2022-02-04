@@ -11,9 +11,9 @@ import scipy.sparse as sp
 import numpy as np
 import cvxpy as cvx
 from functools import partial
-from osd.components.quad_lin import QuadLin
+from osd.classes.quad_lin import QuadLin
 from osd.utilities import compose
-from osd.components.quadlin_utilities import (
+from osd.classes.quadlin_utilities import (
     build_constraint_matrix,
     build_constraint_rhs
 )
@@ -40,7 +40,7 @@ class SmoothSecondDifference(QuadLin):
         cost = compose(cvx.sum_squares, cost)
         return cost
 
-    def prox_op(self, v, weight, rho, use_set=None):
+    def prox_op(self, v, weight, rho, use_set=None, prox_counts=None):
         n = len(v)
         if self.P is None:
             self.P = make_l2d2matrix(n)
@@ -68,7 +68,7 @@ class SmoothSecondDiffPeriodic(SmoothSecondDifference):
         ]
         return
 
-    def prox_op(self, v, weight, rho, use_set=None):
+    def prox_op(self, v, weight, rho, use_set=None, prox_counts=None):
         n = len(v)
         q = self.period_T
         num_groups = n // q

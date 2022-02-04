@@ -1,5 +1,5 @@
-# optimal-signal-demixing
-_Modleing Language for finding optimal solutions to structured signal demixing problems_
+# optimal-signal-decomposition
+_Modeling language for finding signal decompositions_
 
 This software provides a modeling language for describing and solving optimal signal demixing problems. The software solves problems of the form:
 
@@ -12,6 +12,8 @@ where y is some signal. Each `x_k` is assumed to be defined by a "signal class" 
 The goal of the modeling language is to abstract out the math from solving this type of problem. 
 
 See [notebooks](notebooks/) for examples.
+
+A manuscript on this methodology is nearing completion.
 
 Some additional background can be found here:
 

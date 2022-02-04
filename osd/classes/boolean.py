@@ -7,7 +7,7 @@ Author: Bennet Meyers
 '''
 
 import numpy as np
-from osd.components.component import Component
+from osd.classes.component import Component
 
 class Boolean(Component):
 
@@ -24,7 +24,7 @@ class Boolean(Component):
     def _get_cost(self):
         return lambda x: 0
 
-    def prox_op(self, v, weight, rho, use_set=None):
+    def prox_op(self, v, weight, rho, use_set=None, prox_counts=None):
         low_val = self.shift
         high_val = self.scale + self.shift
         r_0 = np.abs(v - low_val)

@@ -17,8 +17,8 @@ import scipy.sparse as sp
 import numpy as np
 import cvxpy as cvx
 import warnings
-from osd.components.quad_lin import QuadLin
-from osd.components.quadlin_utilities import (
+from osd.classes.quad_lin import QuadLin
+from osd.classes.quadlin_utilities import (
     build_constraint_matrix,
     build_constraint_rhs,
     make_periodic_A
@@ -82,9 +82,11 @@ class TimeSmoothEntryClose(QuadLin):
                         lambda1 = self.lambda1, lambda2 = self.lambda2,
                         lambda_qp=self.lambda_qp
                     )
-            # P = self.P
             M = self.sqrt_P
-            x_flat = x.flatten()
+            if isinstance(x, np.ndarray):
+                x_flat = x.flatten(order='F')
+            else:
+                x_flat = x.flatten()
             mu = cvx.Variable(T)
             if isinstance(x, np.ndarray):
                 mu.value = np.average(x, axis=1)
@@ -94,12 +96,12 @@ class TimeSmoothEntryClose(QuadLin):
             # P_param = cvx.Parameter(P.shape, PSD=True, value=P)
             # cost = 0.5 * cvx.quad_form(x_tilde, P)
             cost = 0.5 * cvx.sum_squares(np.sqrt(2) * M @ x_tilde)
-            # print(cost.sign, cost.curvature)
             return cost
         return costfunc
 
 
-    def prox_op(self, v, weight, rho, use_set=None, prox_weights=None):
+    def prox_op(self, v, weight, rho, use_set=None, prox_weights=None,
+                prox_counts=None):
         T, p = v.shape
         if self.P is None:
             if self.quasi_period is None:
@@ -147,7 +149,7 @@ class TimeSmoothEntryClose(QuadLin):
             # this helper variable should not be part of the prox distance penalty
             # note that for this class to truly be a subclass of the quad-lin
             # class, the mprox interface must be used!
-            use_ravel = np.r_[np.ones_like(v_ravel, dtype=bool),
+            use_ravel = np.r_[~np.isnan(v_ravel),
                               np.zeros_like(mu, dtype=bool)]
         v_tilde = np.r_[v_ravel, mu]
         # v_tilde[np.isnan(v_tilde)] = 0
@@ -188,7 +190,10 @@ class TimeSmoothPeriodicEntryClose(TimeSmoothEntryClose):
                                        circular=self.circular)
             M = self.sqrt_P
             z = x[:q, :]
-            z_flat = z.flatten()
+            if isinstance(x, np.ndarray):
+                z_flat = z.flatten(order='F')
+            else:
+                z_flat = z.flatten()
             mu = cvx.Variable(q)
             if isinstance(x, np.ndarray):
                 mu.value = np.average(x[:q], axis=1)
@@ -203,7 +208,7 @@ class TimeSmoothPeriodicEntryClose(TimeSmoothEntryClose):
             return cost
         return costfunc
 
-    def prox_op(self, v, weight, rho, use_set=None):
+    def prox_op(self, v, weight, rho, use_set=None, prox_weights=None):
         # todo: check this implementation of mprox
         q = self.period_T
         T, p = v.shape
@@ -229,8 +234,8 @@ class TimeSmoothPeriodicEntryClose(TimeSmoothEntryClose):
         v_wrapped = v_temp.reshape((num_groups, q, p))
         with warnings.catch_warnings():
             warnings.simplefilter('ignore')
-            counts = np.sum(np.isnan(v_wrapped), axis=0)
-            scales = 1 - (counts / num_groups)
+            prox_counts = np.sum(~np.isnan(v_wrapped), axis=0)
+            scales = prox_counts / num_groups
             v_bar = np.nanmean(v_wrapped, axis=0)
             v_bar[np.isnan(v_bar)] = 0
         if use_set is not None:

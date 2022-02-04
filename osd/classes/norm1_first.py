@@ -19,7 +19,7 @@ Author: Bennet Meyers
 import numpy as np
 import cvxpy as cvx
 from functools import partial
-from osd.components.component import Component
+from osd.classes.component import Component
 from osd.utilities import compose
 
 class SparseFirstDiffConvex(Component):
@@ -38,9 +38,10 @@ class SparseFirstDiffConvex(Component):
         cost = compose(cvx.sum, cvx.abs, diff1)
         return cost
 
-    def prox_op(self, v, weight, rho, use_set=None):
+    def prox_op(self, v, weight, rho, use_set=None, prox_counts=None):
         # TODO: convert this to OSQP with custom canonicalization
-        vec_in, weight_val, rho_val = v, weight, rho
+        vec_in, weight_val, rho_val = np.copy(v), weight, rho
+        vec_in[np.isnan(vec_in)] = 0
         problem = self._prox_prob
         if problem is None:
             n = len(vec_in)

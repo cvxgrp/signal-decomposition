@@ -12,17 +12,11 @@ Author: Bennet Meyers
 import scipy.sparse as sp
 import numpy as np
 import cvxpy as cvx
-from functools import partial
-from osd.components.component import Component
+from osd.classes.component import Component
 from osd.masking import (
     make_masked_identity_matrix,
     make_mask_matrix,
     make_inverse_mask_matrix
-)
-from osd.utilities import compose
-from osd.components.quadlin_utilities import (
-    build_constraint_matrix,
-    build_constraint_rhs
 )
 
 class QuadLin(Component):
@@ -64,17 +58,25 @@ class QuadLin(Component):
             return cost
         return costfunc
 
-    def prox_op(self, v, weight, rho, use_set=None, prox_weights=None):
+    def prox_op(self, v, weight, rho, use_set=None, prox_weights=None,
+                prox_counts=None):
         c = self._c
         u = self._u
-        if use_set is not None:
+        # cached problem does not exist
+        cond1 = c is None
+        # check if the sparsity pattern has changed. if so, don't use cached
+        # problem
+        if not cond1 and use_set is not None:
+            if (self.prox_M != make_mask_matrix(use_set)).nnz > 0:
+                cond1 = True
+        cond2 = self._last_weight != weight
+        cond3 = self._last_rho != rho
+        if use_set is not None and cond1:
             self.prox_M = make_mask_matrix(use_set)
             self.prox_Mt = make_inverse_mask_matrix(use_set)
             self.prox_MtM = make_masked_identity_matrix(use_set)
-            # print(v.shape, use_set.shape, self.prox_MtM.shape)
-        cond1 = c is None
-        cond2 = self._last_weight != weight
-        cond3 = self._last_rho != rho
+            if prox_weights is not None:
+                self.prox_MtM.data *= prox_weights[prox_weights != 0]
         if cond1 or cond2 or cond3:
             # print('factorizing the matrix...')
             n = len(v)
@@ -82,41 +84,19 @@ class QuadLin(Component):
                 temp_mat = sp.identity(self.P.shape[0])
             else:
                 temp_mat = self.prox_MtM
-            if prox_weights is not None:
-                temp_mat.data *= prox_weights[prox_weights != 0]
             M = weight * self.P + rho * temp_mat
-            # Build constraints matrix
-            # A = build_constraint_matrix(
-            #     n, self.period, self.vavg, self.first_val
-            # )
-            # if A is not None and self.F is not None:
-            #     A = sp.bmat([
-            #         [A],
-            #         [self.F]
-            #     ])
-            # elif A is None and self.F is not None:
-            #     A = sp.csc_matrix(self.F)
             if self.F is not None:
-                # print(M.shape, A.shape)
                 A = sp.csc_matrix(self.F)
                 M = sp.bmat([
                     [M, A.T],
                     [A, None]
                 ])
             M = M.tocsc()
-            # print(M.shape)
-            print('factorizing matrix of size ({} x {}) with {} nnz'.format(
-                *M.shape, M.nnz
-            ))
+            # print('factorizing matrix of size ({} x {}) with {} nnz'.format(
+            #     *M.shape, M.nnz
+            # ))
             c = sp.linalg.factorized(M)
-            print('done factorizing!')
-            # u = build_constraint_rhs(
-            #     len(v), self.period, self.vavg, self.first_val
-            # )
-            # if u is not None and self.F is not None:
-            #     u = np.r_[u, self.g]
-            # elif u is None and self.F is not None:
-            #     u = self.g
+            # print('done factorizing!')
             if self.F is not None:
                 u = self.g
             self._c = c
