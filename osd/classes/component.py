@@ -86,7 +86,9 @@ class Component(ABC):
         else:
             return None
 
-    def make_constraints(self, x, T, p):
+    def make_constraints(self, x):
+        T = x.shape[0]
+        p = 1 if len(x.shape) == 1 else x.shape[1]
         c = []
         if self.vmin is not None:
             c.append(x >= self.vmin)
@@ -111,6 +113,17 @@ class Component(ABC):
             else:
                 c.extend(self.internal_constraints(x, T, p))
         return c
+
+    def make_cvx_prox(self, x):
+        """
+
+        :param x: a cvxpy variable
+        :return:
+        """
+        if self.is_convex:
+            pass
+        else:
+            return None
 
     @property
     def parameters(self):

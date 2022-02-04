@@ -344,7 +344,7 @@ class Problem():
         # print([c.curvature for c in costs])
         # print(cvx.sum(costs).is_dcp())
         constraints = [
-            c.make_constraints(x, T, p) for c, x in zip(self.classes, xs)
+            c.make_constraints(x) for c, x in zip(self.classes, xs)
         ]
         constraints = list(chain.from_iterable(constraints))
         constraints.append(cvx.sum([x for x in xs], axis=0)[use_set]
