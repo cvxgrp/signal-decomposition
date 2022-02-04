@@ -39,7 +39,7 @@ class ApproxPeriodic(Component):
         cost = compose(cvx.sum_squares, diff_p)
         return cost
 
-    def prox_op(self, v, weight, rho, use_set=None, prox_counts=None):
+    def prox_op(self, v, weight, rho, use_set=None, prox_weights=None):
         c = self._c
         if self._mask is None and use_set is not None:
             self._mask = Mask(use_set)
