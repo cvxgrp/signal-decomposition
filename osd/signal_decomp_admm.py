@@ -125,7 +125,7 @@ def run_admm(data, components, num_iter=50, rho=None, use_ix=None, verbose=True,
                 'it': it,
                 'obj_val': obj_val
             }
-        if r <= stopping_tolerance or (stop_early and it - best['it'] > 25):
+        if r <= stopping_tolerance or (stop_early and it - best['it'] > 20):
             if verbose:
                 prog.print(obj_val, r, stopping_tolerance, done=True)
             break
