@@ -7,6 +7,7 @@ Author: Bennet Meyers
 '''
 
 from abc import ABC, abstractmethod
+import numpy as np
 import cvxpy as cvx
 
 
@@ -87,6 +88,11 @@ class Component(ABC):
             return None
 
     def make_constraints(self, x):
+        """
+
+        :param x: a cvxpy variable
+        :return:
+        """
         T = x.shape[0]
         p = 1 if len(x.shape) == 1 else x.shape[1]
         c = []
@@ -99,11 +105,11 @@ class Component(ABC):
                 n = x.size
                 c.append(cvx.sum(x) / n == self.vavg)
             else:
-                p = self.period
-                c.append(cvx.sum(x[:p]) / p == 0)
+                period = self.period
+                c.append(cvx.sum(x[:period]) / period == 0)
         if self.period is not None:
-            p = self.period
-            c.append(x[:-p] == x[p:])
+            period = self.period
+            c.append(x[:-period] == x[period:])
         if self.first_val is not None:
             c.append(x[0] == self.first_val)
         if self.internal_constraints is not None:
@@ -114,14 +120,43 @@ class Component(ABC):
                 c.extend(self.internal_constraints(x, T, p))
         return c
 
-    def make_cvx_prox(self, x):
+    def cvx_prox(self, v, weight, rho, use_set=None, prox_weights=None,
+                 **cvx_args):
         """
 
-        :param x: a cvxpy variable
+        :param v:
+        :param weight:
+        :param rho:
+        :param use_set:
+        :param prox_weights:
         :return:
         """
         if self.is_convex:
-            pass
+            known_set = ~np.isnan(v)
+            if use_set is not None:
+                use_set = np.logical_and(known_set, use_set)
+            else:
+                use_set = known_set
+            T = v.shape[0]
+            p = 1 if len(v.shape) == 1 else v.shape[1]
+            q = np.sum(use_set)
+            x = cvx.Variable(v.shape)
+            w = weight
+            r = rho
+            if prox_weights is None:
+                cost = w * self.cost(x) + (r / 2) * cvx.sum_squares(
+                    x[use_set] - v[use_set])
+            else:
+                if len(prox_weights) != q:
+                    pw = prox_weights[use_set]
+                else:
+                    pw = prox_weights
+                cost = w * self.cost(x) + (r / 2) * cvx.sum_squares(
+                    cvx.multiply(pw, x[use_set] - v[use_set]))
+            constraints = self.make_constraints(x)
+            cvx_prox = cvx.Problem(cvx.Minimize(cost), constraints)
+            cvx_prox.solve(**cvx_args)
+            return x.value
         else:
             return None
 
