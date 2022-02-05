@@ -37,6 +37,7 @@ class SparseSecondDiffConvex(Component):
         self.internal_scale = internal_scale
         self.prox_polish = prox_polish
         self.max_bp = max_bp
+        self._last_set = None
         self._it = 0
         return
 
@@ -101,8 +102,11 @@ class SparseSecondDiffConvex(Component):
             use_set = np.ones_like(v, dtype=bool)
         problem = self._prox_prob
         ic = self.internal_scale
-        len_Mv = len(problem.param_dict['Mv'].value)
-        if problem is None or np.sum(use_set) != len_Mv:
+        if self._last_set is not None:
+            set_change = ~np.alltrue(use_set == self._last_set)
+        else:
+            set_change = True
+        if problem is None or set_change:
             x = cvx.Variable(len(v))
             Mv = cvx.Parameter(np.sum(use_set), value=v[use_set], name='Mv')
             w = cvx.Parameter(value=weight, name='weight', nonneg=True)
@@ -114,6 +118,7 @@ class SparseSecondDiffConvex(Component):
             )
             problem = cvx.Problem(objective)
             self._prox_prob = problem
+            self._last_set = use_set
         else:
             params = problem.param_dict
             params['Mv'].value = v[use_set]
