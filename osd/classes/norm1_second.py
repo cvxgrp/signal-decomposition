@@ -116,7 +116,20 @@ class SparseSecondDiffConvex(Component):
                     x[use_set] - Mv
                 )
             )
-            problem = cvx.Problem(objective)
+            c = []
+            if self.vmin is not None:
+                c.append(x >= self.vmin)
+            if self.vmax is not None:
+                c.append(x <= self.vmax)
+            if self.vavg is not None:
+                n = x.size
+                c.append(cvx.sum(x) / n == self.vavg)
+            if self.period is not None:
+                p = self.period
+                c.append(x[:-p] == x[p:])
+            if self.first_val is not None:
+                c.append(x[0] == self.first_val)
+            problem = cvx.Problem(objective, c)
             self._prox_prob = problem
             self._last_set = use_set
         else:
