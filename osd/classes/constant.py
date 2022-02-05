@@ -32,7 +32,7 @@ class Constant(Component):
             avg = np.average(v)
         else:
             avg = np.average(v[use_set])
-        return avg
+        return np.ones_like(v) * avg
 
 class ConstantChunks(Component):
     def __init__(self, length, use_set=None, **kwargs):
