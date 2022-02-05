@@ -41,15 +41,14 @@ class ApproxPeriodic(Component):
 
     def prox_op(self, v, weight, rho, use_set=None, prox_weights=None):
         c = self._c
-        if self._mask is None and use_set is not None:
+        if use_set is None:
+            use_set = ~np.isnan(v)
+        if self._mask is None:
             self._mask = Mask(use_set)
         cond1 = c is None
         cond2 = self._last_weight != weight
         cond3 = self._last_rho != rho
-        cond4 = False
-        if use_set is not None:
-            if not np.alltrue(use_set == self._mask.use_set):
-                cond4 = True
+        cond4 = False if np.alltrue(use_set == self._mask.use_set) else True
         if np.any([cond1, cond2, cond3, cond4]):
             n = len(v)
             I = np.eye(n)
