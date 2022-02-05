@@ -37,7 +37,7 @@ class Sparse(Component):
                 for i in range(nc):
                     A[
                         i, i * chunk_size:(i + 1) * chunk_size
-                    ] = np.ones(chunk_size)
+                    ] = 1
                 return A.T @ z == x
             self._internal_constraints = [make_const]
         return
