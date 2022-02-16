@@ -5,28 +5,26 @@ This module contains the class for a signal that nearly repeats with period p
 
 Author: Bennet Meyers
 '''
-# TODO: convert this to quad-lin
-import scipy.linalg as spl
-import numpy as np
-import cvxpy as cvx
-from osd.classes.component import Component
-from osd.masking import Mask
-from osd.utilities import compose
 
-class ApproxPeriodic(Component):
+import scipy.sparse as sp
+import cvxpy as cvx
+from osd.classes.quad_lin import QuadLin
+from osd.utilities import compose
+from osd.classes.quadlin_utilities import (
+    build_constraint_matrix,
+    build_constraint_rhs
+)
+
+class ApproxPeriodic(QuadLin):
 
     def __init__(self, period, **kwargs):
         self._approx_period = period
-        self._internal_constraints = [
-            lambda x, T, p: cvx.sum(x[:period]) == 0,
-            lambda x, T, p: cvx.sum(x[-period:]) == 0,
-            lambda x, T, p: cvx.sum(x) == 0
-        ]
-        super().__init__(**kwargs)
-        self._c = None
-        self._last_weight = None
-        self._last_rho = None
-        self._mask = None
+        P = None
+        q = None
+        r = None
+        F = None
+        g = None
+        super().__init__(P, q=q, r=r, F=F, g=g, **kwargs)
         return
 
     @property
@@ -40,29 +38,19 @@ class ApproxPeriodic(Component):
         return cost
 
     def prox_op(self, v, weight, rho, use_set=None, prox_weights=None):
-        c = self._c
-        if use_set is None:
-            use_set = ~np.isnan(v)
-        if self._mask is None:
-            self._mask = Mask(use_set)
-        cond1 = c is None
-        cond2 = self._last_weight != weight
-        cond3 = self._last_rho != rho
-        cond4 = False if np.alltrue(use_set == self._mask.use_set) else True
-        if np.any([cond1, cond2, cond3, cond4]):
-            n = len(v)
-            I = np.eye(n)
-            p = self._approx_period
-            M = I[p:] - I[:-p]
-            r = 2 * weight / rho
-            ab = np.zeros((2, n))
-            if use_set is None:
-                I = np.eye(n)
-            else:
-                I = self._mask.MstM
-            A = I + r * M.T.dot(M)
-            for i in range(2):
-                ab[i] = np.pad(np.diag(A, k=i), (0, i))
-            c = spl.cholesky_banded(ab, lower=True)
-            self._c = c
-        return spl.cho_solve_banded((c, True), self._mask.zero_fill(v))
+        n = len(v)
+        per = self._approx_period
+        if self.P is None:
+            m1 = sp.eye(m=n - per, n=n, k=0)
+            m2 = sp.eye(m=n - per, n=n, k=per)
+            D = m2 - m1
+            self.P = 2 * D.T.dot(D)
+            self.F = build_constraint_matrix(
+                n, None, self.vavg, self.first_val
+            )
+            if self.F is not None:
+                self.g = build_constraint_rhs(
+                    len(v), None, self.vavg, self.first_val
+                )
+        vout = super().prox_op(v, weight, rho, use_set=use_set)
+        return vout
