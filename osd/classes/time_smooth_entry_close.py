@@ -100,8 +100,7 @@ class TimeSmoothEntryClose(QuadLin):
         return costfunc
 
 
-    def prox_op(self, v, weight, rho, use_set=None, prox_weights=None,
-                prox_counts=None):
+    def prox_op(self, v, weight, rho, use_set=None, prox_weights=None):
         T, p = v.shape
         if self.P is None:
             if self.quasi_period is None:
