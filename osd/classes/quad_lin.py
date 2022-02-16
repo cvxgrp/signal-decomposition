@@ -58,8 +58,7 @@ class QuadLin(Component):
             return cost
         return costfunc
 
-    def prox_op(self, v, weight, rho, use_set=None, prox_weights=None,
-                prox_counts=None):
+    def prox_op(self, v, weight, rho, use_set=None, prox_weights=None):
         c = self._c
         u = self._u
         # cached problem does not exist
