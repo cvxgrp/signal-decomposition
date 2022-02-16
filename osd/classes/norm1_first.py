@@ -19,14 +19,18 @@ Author: Bennet Meyers
 import numpy as np
 import cvxpy as cvx
 from functools import partial
+import warnings
 from osd.classes.component import Component
 from osd.utilities import compose
 
 class SparseFirstDiffConvex(Component):
 
-    def __init__(self, **kwargs):
+    def __init__(self, internal_scale=1., solver=None, **kwargs):
         super().__init__(**kwargs)
         self._prox_prob = None
+        self.internal_scale = internal_scale
+        self._solver = solver
+        self._last_set = None
         return
 
     @property
@@ -38,23 +42,26 @@ class SparseFirstDiffConvex(Component):
         cost = compose(cvx.sum, cvx.abs, diff1)
         return cost
 
-    def prox_op(self, v, weight, rho, use_set=None, prox_counts=None):
-        # TODO: convert this to OSQP with custom canonicalization
-        vec_in, weight_val, rho_val = np.copy(v), weight, rho
-        vec_in[np.isnan(vec_in)] = 0
+    def prox_op(self, v, weight, rho, use_set=None, verbose=False,
+                prox_counts=None):
+        if use_set is None:
+            use_set = np.ones_like(v, dtype=bool)
         problem = self._prox_prob
-        if problem is None:
-            n = len(vec_in)
-            weight_over_rho = cvx.Parameter(value=weight_val / rho_val,
-                                           name='weight_over_rho', pos=True)
-            v = cvx.Parameter(n, value=vec_in, name='vec_in')
-            x = cvx.Variable(n)
-            if use_set is None:
-                cost = (weight_over_rho * 2 * cvx.norm1(cvx.diff(x))
-                        + cvx.sum_squares(x - v))
-            else:
-                cost = (weight_over_rho * 2 * cvx.norm1(cvx.diff(x))
-                        + cvx.sum_squares(x[use_set] - v[use_set]))
+        ic = self.internal_scale
+        if self._last_set is not None:
+            set_change = ~np.alltrue(use_set == self._last_set)
+        else:
+            set_change = True
+        if problem is None or set_change:
+            x = cvx.Variable(len(v))
+            Mv = cvx.Parameter(np.sum(use_set), value=v[use_set], name='Mv')
+            w = cvx.Parameter(value=weight, name='weight', nonneg=True)
+            r = cvx.Parameter(value=rho, name='rho', nonneg=True)
+            objective = cvx.Minimize(
+                w * cvx.norm1(ic * cvx.diff(x, k=1)) + r / 2 * cvx.sum_squares(
+                    x[use_set] - Mv
+                )
+            )
             c = []
             if self.vmin is not None:
                 c.append(x >= self.vmin)
@@ -68,14 +75,17 @@ class SparseFirstDiffConvex(Component):
                 c.append(x[:-p] == x[p:])
             if self.first_val is not None:
                 c.append(x[0] == self.first_val)
-            problem = cvx.Problem(cvx.Minimize(cost), c)
+            problem = cvx.Problem(objective, c)
             self._prox_prob = problem
+            self._last_set = use_set
         else:
-            parameters = {p.name(): p for p in problem.parameters()}
-            parameters['vec_in'].value = vec_in
-            if ~np.isclose(weight_val / rho_val,
-                           parameters['weight_over_rho'].value,
-                           atol=1e-3):
-                parameters['weight_over_rho'].value = weight_val / rho_val
-        problem.solve(solver='MOSEK')
+            params = problem.param_dict
+            params['Mv'].value = v[use_set]
+            if ~np.isclose(weight, params['weight'].value, atol=1e-3):
+                params['weight'].value = weight
+            if ~np.isclose(rho, params['rho'].value, atol=1e-3):
+                params['rho'].value = rho
+        with warnings.catch_warnings():
+            warnings.simplefilter('ignore')
+            problem.solve(solver=self._solver)
         return problem.variables()[0].value

@@ -30,7 +30,7 @@ from osd.masking import make_masked_identity_matrix
 class SparseSecondDiffConvex(Component):
 
     def __init__(self, internal_scale=1., prox_polish=False,
-                 max_bp=None, **kwargs):
+                 max_bp=None, solver=None, **kwargs):
         super().__init__(**kwargs)
         self._prox_prob = None
         self._rho_over_lambda = None
@@ -39,6 +39,7 @@ class SparseSecondDiffConvex(Component):
         self.max_bp = max_bp
         self._last_set = None
         self._it = 0
+        self._solver = solver
         return
 
     @property
@@ -141,7 +142,7 @@ class SparseSecondDiffConvex(Component):
                 params['rho'].value = rho
         with warnings.catch_warnings():
             warnings.simplefilter('ignore')
-            problem.solve(solver='MOSEK')
+            problem.solve(solver=self._solver)
         return problem.variables()[0].value
 
 def make_P(len_x, rho_over_lambda, use_set=None):
