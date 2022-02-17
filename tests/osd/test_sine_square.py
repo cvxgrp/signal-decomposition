@@ -43,7 +43,11 @@ class TestSineSquare(unittest.TestCase):
         np.testing.assert_(opt_obj_val <= 0.096)
         np.testing.assert_(rms(problem1.components[0] - X_real[0]) <= 0.1)
         np.testing.assert_(rms(problem1.components[1] - X_real[1]) <= 0.21)
-        np.testing.assert_(rms(problem1.components[2] - X_real[2]) <= 0.251)
+        np.testing.assert_(
+            rms(problem1.components[2] - X_real[2]) <= 0.252,
+            'actual value: {:.3e}'.format(
+                rms(problem1.components[2] - X_real[2]))
+        )
 
     def test_bcd(self):
         y, X_real = make_data()

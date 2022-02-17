@@ -58,8 +58,7 @@ class QuadLin(Component):
             return cost
         return costfunc
 
-    def prox_op(self, v, weight, rho, use_set=None, prox_weights=None,
-                prox_counts=None):
+    def prox_op(self, v, weight, rho, use_set=None, prox_weights=None):
         c = self._c
         u = self._u
         # cached problem does not exist
@@ -67,7 +66,12 @@ class QuadLin(Component):
         # check if the sparsity pattern has changed. if so, don't use cached
         # problem
         if not cond1 and use_set is not None:
-            if (self.prox_M != make_mask_matrix(use_set)).nnz > 0:
+            test_mat = make_mask_matrix(use_set)
+            # first test if shape has changed
+            if self.prox_M.shape != test_mat.shape:
+                cond1 = True
+            # assuming the shape has not changed, check if entries are the same
+            elif (self.prox_M != make_mask_matrix(use_set)).nnz > 0:
                 cond1 = True
         cond2 = self._last_weight != weight
         cond3 = self._last_rho != rho

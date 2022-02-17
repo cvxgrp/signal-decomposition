@@ -40,7 +40,7 @@ class SmoothSecondDifference(QuadLin):
         cost = compose(cvx.sum_squares, cost)
         return cost
 
-    def prox_op(self, v, weight, rho, use_set=None, prox_counts=None):
+    def prox_op(self, v, weight, rho, use_set=None, prox_weights=None):
         n = len(v)
         if self.P is None:
             self.P = make_l2d2matrix(n)
@@ -51,7 +51,8 @@ class SmoothSecondDifference(QuadLin):
                 self.g = build_constraint_rhs(
                     len(v), self.period, self.vavg, self.first_val
                 )
-        vout = super().prox_op(v, weight, rho, use_set=use_set)
+        vout = super().prox_op(v, weight, rho, use_set=use_set,
+                               prox_weights=prox_weights)
         return vout
 
 class SmoothSecondDiffPeriodic(SmoothSecondDifference):
@@ -64,14 +65,18 @@ class SmoothSecondDiffPeriodic(SmoothSecondDifference):
         self.period_T = period
         self.circular = circular
         self._internal_constraints = [
-            lambda x, T, p: x[period:, :] == x[:-period, :]
+            lambda x, T, p: x[period:] == x[:-period]
         ]
         return
 
-    def prox_op(self, v, weight, rho, use_set=None, prox_counts=None):
+    def prox_op(self, v, weight, rho, use_set=None, prox_weights=None):
         n = len(v)
         q = self.period_T
         num_groups = n // q
+        if use_set is None:
+            use_set = ~np.isnan(v)
+        else:
+            use_set = np.logical_and(~np.isnan(v), use_set)
         if use_set is not None:
             v_tilde = np.copy(v)
             v_tilde[use_set] = np.nan
@@ -81,10 +86,17 @@ class SmoothSecondDiffPeriodic(SmoothSecondDifference):
             num_groups += 1
             num_new_rows = q - n % q
             v_temp = np.r_[v_tilde, np.nan * np.ones(num_new_rows)]
+            u_temp = np.r_[use_set, np.zeros(num_new_rows, dtype=bool)]
         else:
             v_temp = v
+            u_temp = use_set
+        print(v_temp)
         v_wrapped = v_temp.reshape((num_groups, q))
+        u_wrapped = u_temp.reshape((num_groups, q))
         v_bar = np.nanmean(v_wrapped, axis=0)
+        u_bar = np.any(u_wrapped, axis=0)
+        counts = np.sum(u_wrapped, axis=0)
+        prox_weights = counts / num_groups
         if self.P is None:
             self.P = make_l2d2matrix(q, circular=self.circular)
             # full diff matrix is T-2, but circular diff matrix is q
@@ -96,7 +108,8 @@ class SmoothSecondDiffPeriodic(SmoothSecondDifference):
                 self.g = build_constraint_rhs(
                     q, None, self.vavg, self.first_val
                 )
-        out_bar = super().prox_op(v_bar, weight, rho)
+        out_bar = super().prox_op(v_bar, weight, rho, use_set=u_bar,
+                                  prox_weights=prox_weights)
         out = np.tile(out_bar, num_groups)
         out = out[:n]
         return out

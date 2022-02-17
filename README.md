@@ -1,4 +1,4 @@
-# optimal-signal-decomposition
+# OSD: Optimization(-based) Signal Decomposition
 _Modeling language for finding signal decompositions_
 
 This software provides a modeling language for describing and solving optimal signal demixing problems. The software solves problems of the form:

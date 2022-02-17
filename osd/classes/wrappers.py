@@ -41,6 +41,7 @@ def make_columns_equal(component):
                 warnings.simplefilter('ignore')
                 v_bar = np.nanmean(v, axis=1)
             prox_counts = np.sum(~np.isnan(v), axis=1)
+            prox_weights = prox_counts / v.shape[1]
 
             if use_set is not None:
                 use_reduced = np.any(use_set, axis=1)
@@ -48,7 +49,7 @@ def make_columns_equal(component):
                 use_reduced = ~np.isnan(v_bar)
             x_scalar = super().prox_op(v_bar, weight, rho,
                                        use_set=use_reduced,
-                                       prox_counts=prox_counts)
+                                       prox_weights=prox_weights)
             x = np.tile(x_scalar, (v.shape[1], True)).T
             return x
     return NewClass

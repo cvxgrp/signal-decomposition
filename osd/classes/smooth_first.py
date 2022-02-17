@@ -8,7 +8,6 @@ Author: Bennet Meyers
 '''
 
 import scipy.sparse as sp
-import numpy as np
 import cvxpy as cvx
 from functools import partial
 from osd.classes.quad_lin import QuadLin
@@ -38,7 +37,7 @@ class SmoothFirstDifference(QuadLin):
         cost = compose(cvx.sum_squares, diff1)
         return cost
 
-    def prox_op(self, v, weight, rho, use_set=None, prox_counts=None):
+    def prox_op(self, v, weight, rho, use_set=None, prox_weights=None):
         n = len(v)
         if self.P is None:
             m1 = sp.eye(m=n - 1, n=n, k=0)

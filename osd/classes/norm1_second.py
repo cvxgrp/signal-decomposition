@@ -30,14 +30,16 @@ from osd.masking import make_masked_identity_matrix
 class SparseSecondDiffConvex(Component):
 
     def __init__(self, internal_scale=1., prox_polish=False,
-                 max_bp=None, **kwargs):
+                 max_bp=None, solver=None, **kwargs):
         super().__init__(**kwargs)
         self._prox_prob = None
         self._rho_over_lambda = None
         self.internal_scale = internal_scale
         self.prox_polish = prox_polish
         self.max_bp = max_bp
+        self._last_set = None
         self._it = 0
+        self._solver = solver
         return
 
     @property
@@ -101,8 +103,11 @@ class SparseSecondDiffConvex(Component):
             use_set = np.ones_like(v, dtype=bool)
         problem = self._prox_prob
         ic = self.internal_scale
-        len_Mv = len(problem.param_dict['Mv'].value)
-        if problem is None or np.sum(use_set) != len_Mv:
+        if self._last_set is not None:
+            set_change = ~np.alltrue(use_set == self._last_set)
+        else:
+            set_change = True
+        if problem is None or set_change:
             x = cvx.Variable(len(v))
             Mv = cvx.Parameter(np.sum(use_set), value=v[use_set], name='Mv')
             w = cvx.Parameter(value=weight, name='weight', nonneg=True)
@@ -112,8 +117,22 @@ class SparseSecondDiffConvex(Component):
                     x[use_set] - Mv
                 )
             )
-            problem = cvx.Problem(objective)
+            c = []
+            if self.vmin is not None:
+                c.append(x >= self.vmin)
+            if self.vmax is not None:
+                c.append(x <= self.vmax)
+            if self.vavg is not None:
+                n = x.size
+                c.append(cvx.sum(x) / n == self.vavg)
+            if self.period is not None:
+                p = self.period
+                c.append(x[:-p] == x[p:])
+            if self.first_val is not None:
+                c.append(x[0] == self.first_val)
+            problem = cvx.Problem(objective, c)
             self._prox_prob = problem
+            self._last_set = use_set
         else:
             params = problem.param_dict
             params['Mv'].value = v[use_set]
@@ -123,7 +142,7 @@ class SparseSecondDiffConvex(Component):
                 params['rho'].value = rho
         with warnings.catch_warnings():
             warnings.simplefilter('ignore')
-            problem.solve(solver='MOSEK')
+            problem.solve(solver=self._solver)
         return problem.variables()[0].value
 
 def make_P(len_x, rho_over_lambda, use_set=None):
