@@ -78,9 +78,9 @@ class Problem():
                   stop_early=True, abs_tol=1e-5, rel_tol=1e-5,
                   **cvx_kwargs):
         if rho0_scale is None:
-            rho0_scale = 1
+            rho0_scale = 0.7
         if rho is None:
-            rho = 2 * rho0_scale / (self.data.size * self.classes[0].weight)
+            rho = 2 / (self.data.size * self.classes[0].weight)
         num_iter = int(num_iter)
         if use_set is None:
             use_set = self.known_set
@@ -124,7 +124,7 @@ class Problem():
             self.components = ests
         elif how.lower() in ['admm', 'sd-admm']:
             result = run_admm(
-                self.data, self.classes, num_iter=num_iter, rho=rho,
+                self.data, self.classes, num_iter=num_iter, rho=rho*rho0_scale,
                 use_ix=use_set, verbose=verbose, X_init=X_init, u_init=u_init,
                 stop_early=stop_early, abs_tol=abs_tol, rel_tol=rel_tol,
                 residual_term=self.residual_term
@@ -141,7 +141,7 @@ class Problem():
             self.components = result['X']
         elif how.lower() in ['admm-polish', 'admm-bcd']:
             result = run_admm(
-                self.data, self.classes, num_iter=num_iter, rho=rho,
+                self.data, self.classes, num_iter=num_iter, rho=rho*rho0_scale,
                 use_ix=use_set, verbose=verbose, X_init=X_init, u_init=u_init,
                 stop_early=stop_early, abs_tol=abs_tol, rel_tol=rel_tol,
                 residual_term=self.residual_term
