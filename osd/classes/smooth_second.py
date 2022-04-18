@@ -17,6 +17,7 @@ from osd.classes.quadlin_utilities import (
     build_constraint_matrix,
     build_constraint_rhs
 )
+from osd.classes.base_graph_class import GraphComponent
 
 class SmoothSecondDifference(QuadLin):
 
@@ -54,6 +55,15 @@ class SmoothSecondDifference(QuadLin):
         vout = super().prox_op(v, weight, rho, use_set=use_set,
                                prox_weights=prox_weights)
         return vout
+
+    def make_graph_form(self, T, p):
+        gf = SmoothSecondDifferenceGraph(
+            self.weight, T, p,
+            vmin=self.vmin, vmax=self.vmax,
+            period=self.period, first_val=self.first_val
+        )
+        self._gf = gf
+        return gf.make_dict()
 
 class SmoothSecondDiffPeriodic(SmoothSecondDifference):
     def __init__(self, period, circular=True, **kwargs):
@@ -127,5 +137,26 @@ def make_l2d2matrix(n, circular=False):
         m3 = sp.eye(m=n, n=n, k=2, format='csr')
         m4 = sp.eye(m=n, n=n, k=1-n, format='csr')
         m5 = sp.eye(m=n, n=n, k=2-n, format='csr')
-        D = (m1 - 2 * m2 + m3) - 2 * m4 + m5
+        D = (m1 - 2 * m2 + m3) - 2 * m4 + m5x
     return 2 * D.T.dot(D)
+
+class SmoothSecondDifferenceGraph(GraphComponent):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        return
+
+    def __set_z_size(self):
+        self._z_size = self.x_size - 2
+
+    def __make_P(self):
+        P1 = sp.dok_matrix(2 * (self.x_size,))
+        P2 = np.sqrt(self.weight) * sp.eye(self.z_size)
+        self._Px = P1
+        self._Pz = P2
+
+    def __make_A(self):
+        T = self.x_size
+        m1 = sp.eye(m=T - 2, n=T, k=0, format='csr')
+        m2 = sp.eye(m=T - 2, n=T, k=1, format='csr')
+        m3 = sp.eye(m=T - 2, n=T, k=2, format='csr')
+        self._A = m1 - 2 * m2 + m3

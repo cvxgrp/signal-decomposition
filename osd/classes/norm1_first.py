@@ -17,11 +17,13 @@ Author: Bennet Meyers
 '''
 
 import numpy as np
+import scipy.sparse as sp
 import cvxpy as cvx
 from functools import partial
 import warnings
 from osd.classes.component import Component
 from osd.utilities import compose
+from osd.classes.base_graph_class import GraphComponent
 
 class SparseFirstDiffConvex(Component):
 
@@ -89,3 +91,32 @@ class SparseFirstDiffConvex(Component):
             warnings.simplefilter('ignore')
             problem.solve(solver=self._solver)
         return problem.variables()[0].value
+
+    def make_graph_form(self, T, p):
+        gf = SparseFirstDiffConvexGraph(
+            self.weight, T, p,
+            vmin=self.vmin, vmax=self.vmax,
+            period=self.period, first_val=self.first_val
+        )
+        self._gf = gf
+        return gf.make_dict()
+
+class SparseFirstDiffConvexGraph(GraphComponent):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        return
+
+    def __set_z_size(self):
+        self._z_size = self.x_size - 1
+
+    def __make_gz(self):
+        self._gz = [{'f': 1,
+                     'args': None,
+                     'range': (self.x_size, self.x_size + self.z_size)}]
+
+    def __make_A(self):
+        T = self._T
+        m1 = sp.eye(m=T - 1, n=T, k=0)
+        m2 = sp.eye(m=T - 1, n=T, k=1)
+        D = m2 - m1
+        self._A = D * (self.weight)
