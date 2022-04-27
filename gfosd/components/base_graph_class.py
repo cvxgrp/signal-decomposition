@@ -23,27 +23,29 @@ import scipy.sparse as sp
 import itertools as itt
 
 class GraphComponent(ABC):
-    def __init__(self, weight, T, p, diff=0, **kwargs):
+    def __init__(self, weight, T, p=1, diff=0, **kwargs):
         self._weight = weight
         self._T = T
         self._p = p
         self._x_size = T * p
         self._diff = diff
-        self.__set_z_size()
-        self.__make_P()
-        self._Px = sp.dok_matrix(2 * (self.x_size))
+        self._set_z_size()
+        self._make_P()
+        self._make_q()
+        self._make_r()
+        self._Px = sp.dok_matrix(2 * (self.x_size,))
         self._P = sp.block_diag([self._Px, self._Pz])
-        self.__make_gz()
-        self._gx = [{'f': 0, 'args': None, 'range': (0, self.x_size - 1)}]
-        self._g = itt.chain.from_iterable([self._gx, self._gz])
-        self.__make_A()
-        self.__make_B()
-        self.__make_c()
+        self._make_gz()
+        self._g = self._gz
+        self._make_A()
+        self._make_B()
+        self._make_c()
         return
 
     def make_dict(self):
         canonicalized = {
             'P': self._P,
+            'Pz': self._Pz,
             'q': self._q, #not currently used
             'r': self._r, #not currently used
             'A': self._A,
@@ -53,24 +55,22 @@ class GraphComponent(ABC):
         }
         return canonicalized
 
-    def __set_z_size(self):
+    def _set_z_size(self):
         self._z_size = (self._T - self._diff) * self._p
 
-    def __make_P(self):
-        self._Pz = sp.dok_matrix(2 * (self.z_size))
+    def _make_P(self):
+        self._Pz = sp.dok_matrix(2 * (self.z_size,))
 
-    def __make_q(self):
+    def _make_q(self):
         self._q = None
 
-    def __make_r(self):
+    def _make_r(self):
         self._r = None
 
-    def __make_gz(self):
-        self._gz = [{'g': 0,
-                     'args': None,
-                     'range': (self.x_size, self.x_size + self.z_size)}]
+    def _make_gz(self):
+        self._gz = []
 
-    def __make_A(self):
+    def _make_A(self):
         if self._diff == 0:
             self._A = sp.eye(self.x_size)
         elif self._diff == 1:
@@ -96,13 +96,13 @@ class GraphComponent(ABC):
             raise Exception
 
 
-    def __make_B(self):
+    def _make_B(self):
         self._B = sp.eye(self.z_size) * -1
 
-    def __make_c(self):
+    def _make_c(self):
         self._c = np.zeros(self.z_size)
 
-    def __add_constraints(self):
+    def _add_constraints(self):
         if self._vmin is not None:
             # introduces new internal variable z
             self._z_size += self.x_size
@@ -185,4 +185,3 @@ class GraphComponent(ABC):
     @property
     def P_x(self):
         return self._P
-

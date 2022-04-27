@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-''' Data Handler Module
+''' SD Problem Module
 
 This module contains a class for defining a signal demixing optimization problem
 
@@ -354,3 +354,8 @@ class Problem():
         self._problem_costs = costs
         # print(problem.is_dcp())
         return problem
+
+class GraphProblem():
+    def __init__(self, data, components):
+        self.data = data
+        self.components = components
