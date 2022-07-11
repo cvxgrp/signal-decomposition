@@ -1,6 +1,8 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import scipy.sparse as sp
+import qss
+import cvxpy as cvx
 
 class Problem():
     def __init__(self, data, components):
@@ -10,6 +12,7 @@ class Problem():
         self.p = components[0]._p       #TODO: allow for p != 1
         self.K = len(components)
         self.decomposition = None
+        self.objective_value = None
 
     def make_graph_form(self):
         num_x = self.T * self.p * self.K
@@ -46,13 +49,62 @@ class Problem():
                     pointer += z_len
         out = {
             'P': P,
-            'q': None,
-            'r': None,
+            'q': np.zeros(P.shape[0]),  # not currently used
+            'r': 0,                     # not currently used
             'A': A,
             'b': b,
             'g': g
         }
         return out
+
+    def decompose(self, solver='qss', **kwargs):
+        data = self.make_graph_form()
+        if solver == 'qss':
+            result = self._solve_qss(data, **kwargs)
+        else:
+            result = self._solve_cvx(data, solver, **kwargs)
+        self.retrieve_result(result)
+
+    def _solve_qss(self, data, **solver_kwargs):
+        solver = qss.QSS(data)
+        objval, soln = solver.solve(**solver_kwargs)
+        self.objective_value = objval
+        print(soln.T @ data['P'] @ soln)
+        return soln
+
+    def _solve_cvx(self, data, solver, **solver_kwargs):
+        if solver.lower() in ['cvx', 'cvxpy']:
+            solver = None
+        x = cvx.Variable(data['P'].shape[0])
+        cost = cvx.quad_form(x, data['P'])
+        constraints = [data['A'] @ x == data['b']]
+        for gfunc in data['g']:
+            if gfunc['g'] == 'abs':
+                cost += cvx.sum(gfunc['args']['weight'] * cvx.abs(
+                    x[gfunc['range'][0]:gfunc['range'][1]]))
+            elif gfunc['g'] == 'huber':
+                try:
+                    M = gfunc['args']['M']
+                except KeyError:
+                    M = 1
+                cost += cvx.sum(gfunc['args']['weight'] * cvx.huber(
+                    x[gfunc['range'][0]:gfunc['range'][1]], M=M))
+            elif gfunc['g'] == 'is_pos':
+                constraints.append(x[gfunc['range'][0]:gfunc['range'][1]] >= 0)
+            elif gfunc['g'] == 'is_neg':
+                constraints.append(x[gfunc['range'][0]:gfunc['range'][1]] <= 0)
+            elif gfunc['g'] == 'is_bound':
+                constraints.extend([x[gfunc['range'][0]:gfunc['range'][1]] >= 0,
+                                    x[gfunc['range'][0]:gfunc['range'][1]] <= 1])
+            elif gfunc['g'] in ['card', 'is_finite_set']:
+                print('Problem is non-convex and is not solvable with CVXPY.')
+                print('Please try QSS.')
+                return
+        objective = cvx.Minimize(cost)
+        cvx_prob = cvx.Problem(objective, constraints)
+        cvx_prob.solve(solver=solver, **solver_kwargs)
+        self.objective_value = cvx_prob.value
+        return x.value
 
     def retrieve_result(self, x_value):
         decomposition = np.asarray(x_value[:self.T * self.p * self.K])

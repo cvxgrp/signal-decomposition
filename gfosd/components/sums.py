@@ -20,13 +20,14 @@ class SumAbs(GraphComponent):
                      'range': (0, self.z_size)}]
 
 class SumHuber(GraphComponent):
-    def __init__(self, *args, **kwargs):
+    def __init__(self, M=1, *args, **kwargs):
+        self._M = M
         super().__init__(*args, **kwargs)
         return
 
     def _make_gz(self):
         self._gz = [{'g': 'huber',
-                     'args': {'weight': self.weight},
+                     'args': {'weight': self.weight, 'M': self._M},
                      'range': (0, self.z_size)}]
 
 class SumQuantile(GraphComponent):
