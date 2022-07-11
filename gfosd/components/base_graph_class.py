@@ -9,10 +9,10 @@ abs:        g(x) = |x|
 huber:      g(x) = huber(x)
 card:       g(x) = { 0 if x = 0
                    { 1 otherwise
-nonneg:     g(x) = I(x >= 0)
-nonpos:     g(x) = I(x <= 0)
-box:        g(x) = I(0 <= x <= 1)
-finite_set: g(x) = I(x ∈ S)
+is_pos:     g(x) = I(x >= 0)
+is_neg:     g(x) = I(x <= 0)
+is_bound:   g(x) = I(0 <= x <= 1)
+is_finite_set: g(x) = I(x ∈ S)
 
 Author: Bennet Meyers
 '''

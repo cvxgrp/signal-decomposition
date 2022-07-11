@@ -12,7 +12,7 @@ class FiniteSet(GraphComponent):
         super().__init__(*args, **kwargs)
 
     def _make_gz(self):
-        self._gz = [{'g': 'finite_set',
+        self._gz = [{'g': 'is_finite_set',
                      'args': {'S': self._set},
                      'range': (0, self.z_size)}]
 
