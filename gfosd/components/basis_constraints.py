@@ -17,10 +17,13 @@ import scipy.sparse as sp
 from gfosd.components.base_graph_class import GraphComponent
 
 class Basis(GraphComponent):
-    def __init__(self, basis, penalty=None, *args, **kwargs):
+    def __init__(self, basis, T, penalty=None, weight=1, *args, **kwargs):
         self._basis = basis
         self._penalty = penalty
-        super().__init__(*args, **kwargs)
+        super().__init__(weight, T, *args, **kwargs)
+
+    def _set_z_size(self):
+        self._z_size = self._basis.shape[1]
 
     def _make_B(self):
         self._B = self._basis * -1
@@ -42,7 +45,8 @@ class Basis(GraphComponent):
 class Periodic(Basis):
     def __init__(self, period, T, *args, **kwargs):
         self._period = period
-        num_periods = np.ceil(T / period)
+        T = int(T)
+        num_periods = int(np.ceil(T / period))
         M = sp.eye(period)
         basis = sp.vstack([M] * num_periods)
         basis = basis.tocsr()
