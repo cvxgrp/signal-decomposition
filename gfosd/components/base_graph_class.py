@@ -100,7 +100,7 @@ class GraphComponent(ABC):
         self._B = sp.eye(self.z_size) * -1
 
     def _make_c(self):
-        self._c = np.zeros(self.z_size)
+        self._c = np.zeros(self._B.shape[0])
 
     def _add_constraints(self):
         if self._vmin is not None:
