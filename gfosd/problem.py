@@ -59,7 +59,7 @@ class Problem():
 
     def decompose(self, solver='qss', **kwargs):
         data = self.make_graph_form()
-        if solver == 'qss':
+        if solver.lower() == 'qss':
             result = self._solve_qss(data, **kwargs)
         else:
             result = self._solve_cvx(data, solver, **kwargs)
@@ -76,7 +76,7 @@ class Problem():
         if solver.lower() in ['cvx', 'cvxpy']:
             solver = None
         x = cvx.Variable(data['P'].shape[0])
-        cost = cvx.quad_form(x, data['P'])
+        cost = 0.5 * cvx.quad_form(x, data['P'])
         constraints = [data['A'] @ x == data['b']]
         for gfunc in data['g']:
             if gfunc['g'] == 'abs':

@@ -7,7 +7,7 @@ class SumSquare(GraphComponent):
         return
 
     def _make_P(self):
-        self._Pz = (self.weight / self.z_size) * sp.eye(self.z_size)
+        self._Pz = self.weight * sp.eye(self.z_size)
 
 class SumAbs(GraphComponent):
     def __init__(self, *args, **kwargs):
