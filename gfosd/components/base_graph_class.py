@@ -23,7 +23,7 @@ import scipy.sparse as sp
 import itertools as itt
 
 class GraphComponent(ABC):
-    def __init__(self, weight, T, p=1, diff=0, **kwargs):
+    def __init__(self, T, p=1, weight=1, diff=0, **kwargs):
         self._weight = weight
         self._T = T
         self._p = p

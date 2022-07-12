@@ -1,39 +1,6 @@
 import numpy as np
 import scipy.sparse as sp
-import itertools as itt
 from gfosd.components.base_graph_class import GraphComponent
-
-# class Aggregate(Component):
-#
-#     def __init__(self, component_list, **kwargs):
-#         self.component_list = component_list
-#         super().__init__(**kwargs)
-#         return
-#
-#     @property
-#     def is_convex(self):
-#         is_convex = np.alltrue([
-#             c.is_convex for c in self.component_list
-#         ])
-#
-#     def _get_cost(self):
-#         weights = [c.weight for c in self.component_list]
-#         costs = [c.cost for c in self.component_list]
-#         cost = np.sum([w * c for w, c in zip(weights, costs)])
-#         return cost
-#
-#     def prox_op(self, v, weight, rho, use_set=None, prox_weights=None):
-#         raise NotImplementedError
-#         return
-#
-#     def make_graph_form(self, T, p):
-#         gf = AggregateGraph(
-#             self.component_list, T, p,
-#             vmin=self.vmin, vmax=self.vmax,
-#             period=self.period, first_val=self.first_val
-#         )
-#         self._gf = gf
-#         return gf.make_dict()
 
 class Aggregate(GraphComponent):
     def __init__(self, component_list, *args, **kwargs):
@@ -41,7 +8,7 @@ class Aggregate(GraphComponent):
         T = component_list[0]._T
         p = component_list[0]._p
         weight = component_list[0]._weight
-        super().__init__(weight, T, p, *args, **kwargs)
+        super().__init__(T, p=p, weight=weight, *args, **kwargs)
         return
 
     def _set_z_size(self):

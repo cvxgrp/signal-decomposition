@@ -21,15 +21,15 @@ class Inequality(GraphComponent):
 
     def _make_gz(self):
         if self._kind == 'box':
-            self._gz = [{'g': 'box',
+            self._gz = [{'g': 'is_bound',
                          'args': None,
                          'range': (0, self.z_size)}]
         elif self._kind == 'max':
-            self._gz = [{'g': 'nonpos',
+            self._gz = [{'g': 'is_neg',
                          'args': None,
                          'range': (0, self.z_size)}]
         elif self._kind == 'min':
-            self._gz = [{'g': 'nonneg',
+            self._gz = [{'g': 'is_pos',
                          'args': None,
                          'range': (0, self.z_size)}]
 

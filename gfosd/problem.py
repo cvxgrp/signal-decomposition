@@ -69,7 +69,7 @@ class Problem():
         solver = qss.QSS(data)
         objval, soln = solver.solve(**solver_kwargs)
         self.objective_value = objval
-        print(soln.T @ data['P'] @ soln)
+        # print(soln.T @ data['P'] @ soln)
         return soln
 
     def _solve_cvx(self, data, solver, **solver_kwargs):
@@ -99,6 +99,7 @@ class Problem():
             elif gfunc['g'] in ['card', 'is_finite_set']:
                 print('Problem is non-convex and is not solvable with CVXPY.')
                 print('Please try QSS.')
+                self.objective_value = None
                 return
         objective = cvx.Minimize(cost)
         cvx_prob = cvx.Problem(objective, constraints)
@@ -107,9 +108,12 @@ class Problem():
         return x.value
 
     def retrieve_result(self, x_value):
-        decomposition = np.asarray(x_value[:self.T * self.p * self.K])
-        decomposition = decomposition.reshape((self.K, -1))
-        self.decomposition = decomposition
+        if x_value is not None:
+            decomposition = np.asarray(x_value[:self.T * self.p * self.K])
+            decomposition = decomposition.reshape((self.K, -1))
+            self.decomposition = decomposition
+        else:
+            self.decomposition = None
 
     def plot_decomposition(self, x_series=None, X_real=None, figsize=(10, 8),
                            label='estimated', exponentiate=False,
