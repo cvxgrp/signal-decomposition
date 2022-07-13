@@ -13,6 +13,7 @@ class Problem():
         self.K = len(components)
         self.decomposition = None
         self.objective_value = None
+        self._qss_soln = None
 
     def make_graph_form(self):
         num_x = self.T * self.p * self.K
@@ -57,8 +58,9 @@ class Problem():
         }
         return out
 
-    def decompose(self, solver='qss', **kwargs):
-        data = self.make_graph_form()
+    def decompose(self, solver='qss', data=None, **kwargs):
+        if data is None:
+            data = self.make_graph_form()
         if solver.lower() == 'qss':
             result = self._solve_qss(data, **kwargs)
         else:
@@ -68,6 +70,7 @@ class Problem():
     def _solve_qss(self, data, **solver_kwargs):
         solver = qss.QSS(data)
         objval, soln = solver.solve(**solver_kwargs)
+        self._qss_soln = soln
         self.objective_value = objval
         # print(soln.T @ data['P'] @ soln)
         return soln
