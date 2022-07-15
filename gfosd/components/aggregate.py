@@ -5,11 +5,27 @@ from gfosd.components.base_graph_class import GraphComponent
 class Aggregate(GraphComponent):
     def __init__(self, component_list, *args, **kwargs):
         self._gf_list = component_list
-        T = component_list[0]._T
-        p = component_list[0]._p
-        weight = component_list[0]._weight
-        super().__init__(T, p=p, weight=weight, *args, **kwargs)
+        weight = 1
+        super().__init__(weight=weight, *args, **kwargs)
         return
+
+    def prepare_attributes(self, T, p=1):
+        for c in self._gf_list:
+            c.prepare_attributes(T, p=p)
+        self._T = T
+        self._p = p
+        self._x_size = T * p
+        self._set_z_size()
+        self._make_P()
+        self._make_q()
+        self._make_r()
+        self._Px = sp.dok_matrix(2 * (self.x_size,))
+        self._P = sp.block_diag([self._Px, self._Pz])
+        self._make_gz()
+        self._g = self._gz
+        self._make_A()
+        self._make_B()
+        self._make_c()
 
     def _set_z_size(self):
         self._z_size = np.sum([c.z_size for c in self._gf_list])

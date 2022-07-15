@@ -23,12 +23,23 @@ import scipy.sparse as sp
 import itertools as itt
 
 class GraphComponent(ABC):
-    def __init__(self, T, p=1, weight=1, diff=0, **kwargs):
+    def __init__(self, weight=1, diff=0, **kwargs):
         self._weight = weight
+        self._diff = diff
+        self._P = None
+        self._Pz = None
+        self._q = None  # not currently used
+        self._r = None  # not currently used
+        self._A = None
+        self._B = None
+        self._c = None
+        self._g = None
+        return
+
+    def prepare_attributes(self, T, p=1):
         self._T = T
         self._p = p
         self._x_size = T * p
-        self._diff = diff
         self._set_z_size()
         self._make_P()
         self._make_q()
@@ -40,7 +51,7 @@ class GraphComponent(ABC):
         self._make_A()
         self._make_B()
         self._make_c()
-        return
+
 
     def make_dict(self):
         canonicalized = {

@@ -8,12 +8,20 @@ class Problem():
     def __init__(self, data, components):
         self.data = data
         self.components = components
-        self.T = components[0]._T
-        self.p = components[0]._p       #TODO: allow for p != 1
+        if len(data.shape) == 1:
+            T = len(data)
+            p = 1
+        else:
+            T, p = data.shape
+        self.T = T
+        self.p = p
+        for c in self.components:
+            c.prepare_attributes(T, p)
         self.K = len(components)
         self.decomposition = None
         self.objective_value = None
         self._qss_soln = None
+        self._qss_obj = None
 
     def make_graph_form(self):
         num_x = self.T * self.p * self.K
@@ -72,6 +80,7 @@ class Problem():
         objval, soln = solver.solve(**solver_kwargs)
         self._qss_soln = soln
         self.objective_value = objval
+        self._qss_obj = solver
         # print(soln.T @ data['P'] @ soln)
         return soln
 

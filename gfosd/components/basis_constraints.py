@@ -17,10 +17,10 @@ import scipy.sparse as sp
 from gfosd.components.base_graph_class import GraphComponent
 
 class Basis(GraphComponent):
-    def __init__(self, basis, T, penalty=None, *args, **kwargs):
+    def __init__(self, basis, penalty=None, *args, **kwargs):
         self._basis = basis
         self._penalty = penalty
-        super().__init__(T, *args, **kwargs)
+        super().__init__(*args, **kwargs)
 
     def _set_z_size(self):
         self._z_size = self._basis.shape[1]
