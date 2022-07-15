@@ -108,7 +108,7 @@ class GraphComponent(ABC):
 
 
     def _make_B(self):
-        self._B = sp.eye(self.z_size) * -1
+        self._B = sp.eye(self._A.shape[0], self.z_size) * -1
 
     def _make_c(self):
         self._c = np.zeros(self._B.shape[0])
