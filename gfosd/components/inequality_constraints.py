@@ -22,7 +22,8 @@ class Inequality(GraphComponent):
     def _make_g(self, size):
         if self._kind == 'box':
             g = [{'g': 'is_bound',
-                  'args': None,
+                  'args': {'lb': self._min,
+                           'ub': self._max},
                   'range': (0, size)}]
         elif self._kind == 'max':
             g = [{'g': 'is_neg',
@@ -36,13 +37,13 @@ class Inequality(GraphComponent):
 
     def _make_B(self):
         if self._kind == 'box':
-            self._B = -1 * (self._max - self._min) * sp.eye(self.z_size)
+            self._B = sp.eye(self.z_size)
         elif self._kind == 'max' or self._kind == 'min':
             self._B = -1 * sp.eye(self.z_size)
 
     def _make_c(self):
         if self._kind == 'box':
-            self._c = self._min * np.ones(self.x_size)
+            self._c = np.ones(self.x_size)
         elif self._kind == 'max':
             self._c = self._max * np.ones(self.x_size)
         elif self._kind == 'min':

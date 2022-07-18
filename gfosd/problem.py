@@ -114,8 +114,10 @@ class Problem():
             elif gfunc['g'] == 'is_neg':
                 constraints.append(x[gfunc['range'][0]:gfunc['range'][1]] <= 0)
             elif gfunc['g'] == 'is_bound':
-                constraints.extend([x[gfunc['range'][0]:gfunc['range'][1]] >= 0,
-                                    x[gfunc['range'][0]:gfunc['range'][1]] <= 1])
+                lb = gfunc['args']['lb']
+                ub = gfunc['args']['ub']
+                constraints.extend([x[gfunc['range'][0]:gfunc['range'][1]] >= lb,
+                                    x[gfunc['range'][0]:gfunc['range'][1]] <= ub])
             elif gfunc['g'] in ['card', 'is_finite_set']:
                 print('Problem is non-convex and is not solvable with CVXPY.')
                 print('Please try QSS.')

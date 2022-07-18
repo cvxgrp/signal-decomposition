@@ -10,9 +10,11 @@ class Aggregate(GraphComponent):
         return
 
     def prepare_attributes(self, T, p=1):
+        helper_removed = False
         for ix, c in enumerate(self._gf_list):
-            if ix == 0:
+            if not helper_removed and c._diff == 0:
                 c.prepare_attributes(T, p=p, helper=False)
+                helper_removed = True
             else:
                 c.prepare_attributes(T, p=p, helper=True)
         self._T = T
