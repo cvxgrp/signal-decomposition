@@ -10,19 +10,23 @@ class Aggregate(GraphComponent):
         return
 
     def prepare_attributes(self, T, p=1):
-        for c in self._gf_list:
-            c.prepare_attributes(T, p=p)
+        for ix, c in enumerate(self._gf_list):
+            if ix == 0:
+                c.prepare_attributes(T, p=p, helper=False)
+            else:
+                c.prepare_attributes(T, p=p, helper=True)
         self._T = T
         self._p = p
         self._x_size = T * p
         self._set_z_size()
-        self._make_P()
+        self._Px = self._gf_list[0]._Px # only first one in list can be nonzero
+        self._Pz = sp.block_diag([
+            c._Pz for c in self._gf_list
+        ])
         self._make_q()
         self._make_r()
-        self._Px = sp.dok_matrix(2 * (self.x_size,))
-        self._P = sp.block_diag([self._Px, self._Pz])
-        self._make_gz()
-        self._g = self._gz
+        self._gx = self._make_gx()
+        self._gz = self._make_gz()
         self._make_A()
         self._make_B()
         self._make_c()
@@ -35,9 +39,17 @@ class Aggregate(GraphComponent):
             c._Pz for c in self._gf_list
         ])
 
+    def _make_gx(self):
+        gx = []
+        for ix, component in enumerate(self._gf_list):
+            for d in component._gx:
+                if isinstance(d, dict):
+                    gx.append(d)
+        return gx
+
     def _make_gz(self):
         # print([c._gz for c in self._gf_list])
-        self._gz = []
+        gz = []
         z_lengths = [
             entry.z_size for entry in self._gf_list
         ]
@@ -46,14 +58,15 @@ class Aggregate(GraphComponent):
         # print(breakpoints)
         for ix, component in enumerate(self._gf_list):
             pointer = 0
-            for d in component._g:
+            for d in component._gz:
                 if isinstance(d, dict):
                     z_len = np.diff(d['range'])[0]
                     new_d = d.copy()
                     new_d['range'] = (breakpoints[ix] + pointer,
                                       breakpoints[ix] + z_len + pointer)
-                    self._gz.append(new_d)
+                    gz.append(new_d)
                     pointer += z_len
+        return gz
 
     def _make_A(self):
         self._A = sp.bmat([[c._A] for c in self._gf_list])

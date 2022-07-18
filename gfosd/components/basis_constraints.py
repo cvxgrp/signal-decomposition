@@ -28,19 +28,21 @@ class Basis(GraphComponent):
     def _make_B(self):
         self._B = self._basis * -1
 
-    def _make_gz(self):
+    def _make_g(self, size):
         if (self._penalty is None) or (self._penalty == 'sum_square'):
-            self._gz = []
+            g = []
         else:
-            self._gz = [{'g': self._penalty,
+            g = [{'g': self._penalty,
                          'args': {'weight': self.weight},
-                         'range': (0, self.z_size)}]
+                         'range': (0, size)}]
+        return g
 
-    def _make_P(self):
+    def _make_P(self, size):
         if (self._penalty is None) or (self._penalty != 'sum_square'):
-            self._Pz = sp.dok_matrix(2 * (self.z_size,))
+            P = sp.dok_matrix(2 * (size,))
         else:
-            self._Pz = self.weight * sp.eye(self.z_size)
+            P = self.weight * sp.eye(size)
+        return P
 
 class Periodic(Basis):
     def __init__(self, period, T, *args, **kwargs):

@@ -26,8 +26,9 @@ class Problem():
     def make_graph_form(self):
         num_x = self.T * self.p * self.K
         dicts = [c.make_dict() for c in self.components]
+        Px = sp.block_diag([d['Px'] for d in dicts])
         Pz = sp.block_diag([d['Pz'] for d in dicts])
-        P = sp.block_diag([sp.dok_matrix(2 * (num_x,)), Pz])
+        P = sp.block_diag([Px, Pz])
         Al = sp.block_diag([d['A'] for d in dicts])
         Ar = sp.block_diag([d['B'] for d in dicts])
         A = sp.bmat([[Al, Ar]])
@@ -39,6 +40,13 @@ class Problem():
         b = np.concatenate([d['c'] for d in dicts])
         b = np.concatenate([b, self.data])
         g = []
+        for ix, component in enumerate(self.components):
+            for d in component._gx:
+                if isinstance(d, dict):
+                    new_d = d.copy()
+                    new_d['range'] = (self.T * self.p * ix,
+                                      self.T * self.p * (ix + 1))
+                    g.append(new_d)
         z_lengths = [
             entry.z_size for entry in self.components
         ]
@@ -47,7 +55,7 @@ class Problem():
         # print(breakpoints)
         for ix, component in enumerate(self.components):
             pointer = 0
-            for d in component._g:
+            for d in component._gz:
                 if isinstance(d, dict):
                     z_len = np.diff(d['range'])[0]
                     # print(z_len)

@@ -19,19 +19,20 @@ class Inequality(GraphComponent):
             raise Exception
         super().__init__(weight=1, *args, **kwargs)
 
-    def _make_gz(self):
+    def _make_g(self, size):
         if self._kind == 'box':
-            self._gz = [{'g': 'is_bound',
-                         'args': None,
-                         'range': (0, self.z_size)}]
+            g = [{'g': 'is_bound',
+                  'args': None,
+                  'range': (0, size)}]
         elif self._kind == 'max':
-            self._gz = [{'g': 'is_neg',
-                         'args': None,
-                         'range': (0, self.z_size)}]
+            g = [{'g': 'is_neg',
+                  'args': None,
+                  'range': (0, size)}]
         elif self._kind == 'min':
-            self._gz = [{'g': 'is_pos',
-                         'args': None,
-                         'range': (0, self.z_size)}]
+            g = [{'g': 'is_pos',
+                  'args': None,
+                  'range': (0, size)}]
+        return g
 
     def _make_B(self):
         if self._kind == 'box':

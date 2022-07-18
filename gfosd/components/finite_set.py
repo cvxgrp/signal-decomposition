@@ -11,10 +11,11 @@ class FiniteSet(GraphComponent):
             self._values = set(values)
         super().__init__(*args, **kwargs)
 
-    def _make_gz(self):
-        self._gz = [{'g': 'is_finite_set',
+    def _make_g(self, size):
+        g = [{'g': 'is_finite_set',
                      'args': {'S': self._values},
-                     'range': (0, self.z_size)}]
+                     'range': (0, size)}]
+        return g
 
 class Boolean(FiniteSet):
     def __init__(self, *args, **kwargs):

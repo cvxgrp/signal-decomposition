@@ -26,51 +26,63 @@ class GraphComponent(ABC):
     def __init__(self, weight=1, diff=0, **kwargs):
         self._weight = weight
         self._diff = diff
-        self._P = None
+        self._Px = None
         self._Pz = None
         self._q = None  # not currently used
         self._r = None  # not currently used
         self._A = None
         self._B = None
         self._c = None
-        self._g = None
+        self._gx = None
+        self._gz = None
         return
 
-    def prepare_attributes(self, T, p=1):
+    def prepare_attributes(self, T, p=1, helper=False):
         self._T = T
         self._p = p
         self._x_size = T * p
-        self._set_z_size()
-        self._make_P()
-        self._make_q()
-        self._make_r()
-        self._Px = sp.dok_matrix(2 * (self.x_size,))
-        self._P = sp.block_diag([self._Px, self._Pz])
-        self._make_gz()
-        self._g = self._gz
-        self._make_A()
-        self._make_B()
-        self._make_c()
-
+        if self._diff > 0 or helper:
+            self._set_z_size()
+            self._Px = sp.dok_matrix(2 * (self.x_size,))
+            self._Pz = self._make_P(self.z_size)
+            self._make_q()
+            self._make_r()
+            self._gx = []
+            self._gz = self._make_g(self.z_size)
+            self._make_A()
+            self._make_B()
+            self._make_c()
+        else:
+            self._z_size = 0
+            self._Px = self._make_P(self.x_size)
+            self._Pz = sp.dok_matrix(2 * (self.z_size,))
+            self._make_q()
+            self._make_r()
+            self._gx = self._make_g(self.x_size)
+            self._gz = []
+            self._A = sp.dok_matrix((0, self.x_size))
+            self._B = sp.dok_matrix((0, self.z_size))
+            self._c = np.zeros(0)
 
     def make_dict(self):
         canonicalized = {
-            'P': self._P,
+            'Px': self._Px,
             'Pz': self._Pz,
             'q': self._q, #not currently used
             'r': self._r, #not currently used
             'A': self._A,
             'B': self._B,
             'c': self._c,
-            'g': self._g
+            'gx': self._gx,
+            'gz': self._gz
         }
         return canonicalized
 
     def _set_z_size(self):
         self._z_size = (self._T - self._diff) * self._p
 
-    def _make_P(self):
-        self._Pz = sp.dok_matrix(2 * (self.z_size,))
+    def _make_P(self, size):
+        return sp.dok_matrix(2 * (size,))
 
     def _make_q(self):
         self._q = None
@@ -78,8 +90,8 @@ class GraphComponent(ABC):
     def _make_r(self):
         self._r = None
 
-    def _make_gz(self):
-        self._gz = []
+    def _make_g(self, size):
+        return []
 
     def _make_A(self):
         if self._diff == 0:

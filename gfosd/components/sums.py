@@ -6,18 +6,19 @@ class SumSquare(GraphComponent):
         super().__init__(*args, **kwargs)
         return
 
-    def _make_P(self):
-        self._Pz = self.weight * sp.eye(self.z_size)
+    def _make_P(self, size):
+        return self.weight * sp.eye(size)
 
 class SumAbs(GraphComponent):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         return
 
-    def _make_gz(self):
-        self._gz = [{'g': 'abs',
-                     'args': {'weight': self.weight},
-                     'range': (0, self.z_size)}]
+    def _make_g(self, size):
+        g = [{'g': 'abs',
+              'args': {'weight': self.weight},
+              'range': (0, size)}]
+        return g
 
 class SumHuber(GraphComponent):
     def __init__(self, M=1, *args, **kwargs):
@@ -25,10 +26,10 @@ class SumHuber(GraphComponent):
         super().__init__(*args, **kwargs)
         return
 
-    def _make_gz(self):
-        self._gz = [{'g': 'huber',
-                     'args': {'weight': self.weight, 'M': self._M},
-                     'range': (0, self.z_size)}]
+    def _make_g(self, size):
+        g = [{'g': 'huber',
+              'args': {'weight': self.weight, 'M': self._M},
+              'range': (0, size)}]
 
 class SumQuantile(GraphComponent):
     def __init__(self, tau, *args, **kwargs):
@@ -36,17 +37,17 @@ class SumQuantile(GraphComponent):
         super().__init__(*args, **kwargs)
         return
 
-    def _make_gz(self):
-        self._gz = [{'g': 'quantile',
-                     'args': {'weight': self.weight, 'tau': self.tau},
-                     'range': (0, self.z_size)}]
+    def _make_g(self, size):
+        g = [{'g': 'quantile',
+              'args': {'weight': self.weight, 'tau': self.tau},
+              'range': (0, size)}]
 
 class SumCard(GraphComponent):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         return
 
-    def _make_gz(self):
-        self._gz = [{'f': 'card',
-                     'args': {'weight': self.weight},
-                     'range': (0, self.z_size)}]
+    def _make_g(self, size):
+        g = [{'f': 'card',
+              'args': {'weight': self.weight},
+              'range': (0, size)}]
