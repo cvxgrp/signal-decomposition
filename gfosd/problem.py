@@ -91,10 +91,11 @@ class Problem():
 
     def _solve_qss(self, data, **solver_kwargs):
         solver = qss.QSS(data)
-        objval, soln = solver.solve(**solver_kwargs)
+        objval, soln, residuals = solver.solve(**solver_kwargs)
         self._qss_soln = soln
         self.objective_value = objval
         self._qss_obj = solver
+        self._residuals = residuals
         # print(soln.T @ data['P'] @ soln)
         return soln
 
