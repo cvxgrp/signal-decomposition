@@ -3,11 +3,16 @@ import matplotlib.pyplot as plt
 import scipy.sparse as sp
 import qss
 import cvxpy as cvx
+from osd.masking import Mask
 
 class Problem():
-    def __init__(self, data, components):
+    def __init__(self, data, components, use_set=None):
         self.data = data
         self.components = components
+        if use_set is None:
+            self.mask = Mask(~np.isnan(data))
+        else:
+            self.mask = Mask(np.logical_and(use_set, ~np.isnan(data)))
         if len(data.shape) == 1:
             T = len(data)
             p = 1
@@ -32,13 +37,14 @@ class Problem():
         Al = sp.block_diag([d['A'] for d in dicts])
         Ar = sp.block_diag([d['B'] for d in dicts])
         A = sp.bmat([[Al, Ar]])
-        last_block_row = [sp.eye(self.T * self.p)] * self.K
-        last_block_row.append(sp.dok_matrix((self.T * self.p,
+        M = self.mask.M
+        last_block_row = [M] * self.K
+        last_block_row.append(sp.dok_matrix((self.mask.q,
                                              Pz.shape[0])))
         last_block_row = sp.hstack(last_block_row)
         A = sp.vstack([A, last_block_row])
         b = np.concatenate([d['c'] for d in dicts])
-        b = np.concatenate([b, self.data])
+        b = np.concatenate([b, self.mask.mask(self.data)])
         g = []
         for ix, component in enumerate(self.components):
             for d in component._gx:
@@ -126,7 +132,9 @@ class Problem():
         objective = cvx.Minimize(cost)
         cvx_prob = cvx.Problem(objective, constraints)
         cvx_prob.solve(solver=solver, **solver_kwargs)
+        self._cvx_obj = cvx_prob
         self.objective_value = cvx_prob.value
+        self._qss_soln = x.value
         return x.value
 
     def retrieve_result(self, x_value):
