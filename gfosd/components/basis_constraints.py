@@ -21,12 +21,19 @@ class Basis(GraphComponent):
         self._basis = basis
         self._penalty = penalty
         super().__init__(*args, **kwargs)
+        self._has_helpers = True
 
     def _set_z_size(self):
         self._z_size = self._basis.shape[1]
 
+    def _make_A(self):
+        self._A = sp.eye(self._basis.shape[0])
+
     def _make_B(self):
         self._B = self._basis * -1
+
+    def _make_c(self):
+        self._c = np.zeros(self._B.shape[0])
 
     def _make_g(self, size):
         if (self._penalty is None) or (self._penalty == 'sum_square'):
@@ -53,4 +60,4 @@ class Periodic(Basis):
         basis = sp.vstack([M] * num_periods)
         basis = basis.tocsr()
         basis = basis[:T]
-        super().__init__(basis, T, *args, **kwargs)
+        super().__init__(basis, *args, **kwargs)

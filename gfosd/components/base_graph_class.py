@@ -26,6 +26,7 @@ class GraphComponent(ABC):
     def __init__(self, weight=1, diff=0, **kwargs):
         self._weight = weight
         self._diff = diff
+        self._has_helpers = diff != 0
         self._Px = None
         self._Pz = None
         self._q = None  # not currently used
@@ -37,11 +38,11 @@ class GraphComponent(ABC):
         self._gz = None
         return
 
-    def prepare_attributes(self, T, p=1, helper=False):
+    def prepare_attributes(self, T, p=1):
         self._T = T
         self._p = p
         self._x_size = T * p
-        if self._diff > 0 or helper:
+        if self._diff > 0 or self._has_helpers:
             self._set_z_size()
             self._Px = sp.dok_matrix(2 * (self.x_size,))
             self._Pz = self._make_P(self.z_size)
