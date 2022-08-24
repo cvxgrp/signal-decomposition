@@ -48,6 +48,6 @@ class SumCard(GraphComponent):
         return
 
     def _make_g(self, size):
-        g = [{'f': 'card',
+        g = [{'g': 'card',
               'args': {'weight': self.weight},
               'range': (0, size)}]
