@@ -153,10 +153,10 @@ class Problem():
             return
         if not exponentiate:
             f = lambda x: x
-            base = 'Component $x'
+            base = 'component $x'
         else:
             f = lambda x: np.exp(x)
-            base = 'Component $\\tilde{x}'
+            base = 'component $\\tilde{x}'
         if skip is not None:
             skip = np.atleast_1d(skip)
             nd = len(skip)
