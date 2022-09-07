@@ -199,7 +199,7 @@ class Problem():
                 if X_real is not None:
                     ax[ax_ix].plot(xs, np.sum(X_real[1:], axis=0), label='true',
                                linewidth=1)
-                ax[ax_ix].set_title('composed signal')
+                ax[ax_ix].set_title('Composed signal')
                 ax[ax_ix].legend()
             if X_real is not None:
                 ax[ax_ix].legend()
