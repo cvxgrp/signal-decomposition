@@ -85,9 +85,12 @@ class Problem():
             data = self.make_graph_form()
         if solver.lower() == 'qss':
             result = self._solve_qss(data, **kwargs)
+
         else:
             result = self._solve_cvx(data, solver, **kwargs)
         self.retrieve_result(result)
+        if solver.lower() == 'qss':
+            self.make_feasible_qss()
 
     def _solve_qss(self, data, **solver_kwargs):
         solver = qss.QSS(data)
