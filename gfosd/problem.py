@@ -98,6 +98,19 @@ class Problem():
         # print(soln.T @ data['P'] @ soln)
         return soln
 
+    def make_feasible_qss(self,  data):
+        new_solution = np.copy(self._qss_soln)
+        new_x1 = np.zeros_like(self.decomposition[0])
+        new_x1[~np.isnan(self.data)] = (
+                self.data - np.sum(self.decomposition[1:], axis=0)
+        )[~np.isnan(self.data)]
+        new_solution[:len(new_x1)] = new_x1
+        self.retrieve_result(new_solution)
+        self._qss_soln = new_solution
+        self.objective_value = qss.util.evaluate_objective(
+            data['P'], data['q'], data['r'], data['g'], new_solution, 1, 1
+        )
+
     def _solve_cvx(self, data, solver, **solver_kwargs):
         if solver.lower() in ['cvx', 'cvxpy']:
             solver = None
