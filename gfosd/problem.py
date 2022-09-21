@@ -109,7 +109,8 @@ class Problem():
         self.retrieve_result(new_solution)
         self._qss_soln = new_solution
         self.objective_value = qss.util.evaluate_objective(
-            qss_data['P'], qss_data['q'], qss_data['r'], qss_data['g'],
+            qss_data['P'], qss_data['q'], qss_data['r'],
+            qss.proximal.GCollection(qss_data['g'], len(self._qss_soln)),
             new_solution, 1, 1
         )
 
