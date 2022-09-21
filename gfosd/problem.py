@@ -85,9 +85,12 @@ class Problem():
             data = self.make_graph_form()
         if solver.lower() == 'qss':
             result = self._solve_qss(data, **kwargs)
+
         else:
             result = self._solve_cvx(data, solver, **kwargs)
         self.retrieve_result(result)
+        if solver.lower() == 'qss':
+            self.make_feasible_qss()
 
     def _solve_qss(self, data, **solver_kwargs):
         solver = qss.QSS(data)
@@ -97,6 +100,22 @@ class Problem():
         self._qss_obj = solver
         # print(soln.T @ data['P'] @ soln)
         return soln
+
+    def make_feasible_qss(self):
+        qss_data = self.make_graph_form()
+        new_solution = np.copy(self._qss_soln)
+        new_x1 = np.zeros_like(self.decomposition[0])
+        new_x1[~np.isnan(self.data)] = (
+                self.data - np.sum(self.decomposition[1:], axis=0)
+        )[~np.isnan(self.data)]
+        new_solution[:len(new_x1)] = new_x1
+        self.retrieve_result(new_solution)
+        self._qss_soln = new_solution
+        self.objective_value = qss.util.evaluate_objective(
+            qss_data['P'], qss_data['q'], qss_data['r'],
+            qss.proximal.GCollection(qss_data['g'], len(self._qss_soln)),
+            new_solution, 1, 1
+        )
 
     def _solve_cvx(self, data, solver, **solver_kwargs):
         if solver.lower() in ['cvx', 'cvxpy']:
