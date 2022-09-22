@@ -42,7 +42,7 @@ class GraphComponent(ABC):
         self._T = T
         self._p = p
         self._x_size = T * p
-        if self._diff > 0 or self._has_helpers:
+        if self._has_helpers:
             self._set_z_size()
             self._Px = sp.dok_matrix(2 * (self.x_size,))
             self._Pz = self._make_P(self.z_size)
