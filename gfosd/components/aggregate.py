@@ -11,7 +11,16 @@ class Aggregate(GraphComponent):
 
     def prepare_attributes(self, T, p=1):
         helper_removed = False
+        # By default, basic components are not instantiated with a helpler
+        # variable, if not required. However, we need to override that for
+        # Aggregates that apply more than one g to the same component, without
+        # linear transforms.
         for ix, c in enumerate(self._gf_list):
+            if helper_removed:
+                c._has_helpers = True
+            else:
+                if not c._has_helpers:
+                    helper_removed = True
             c.prepare_attributes(T, p=p)
         self._T = T
         self._p = p

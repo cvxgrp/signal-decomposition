@@ -42,6 +42,14 @@ class GraphComponent(ABC):
         self._T = T
         self._p = p
         self._x_size = T * p
+        # There are two ways to construct the problem data for a class for QSS.
+        # The first way applies the quadratic and separable costs to a helper
+        # variable. The second way applies the costs to the component variable.
+        # Typically, we want to avoid using helper variables if they aren't
+        # necessary (e.g. for x = z relationships). But in the Aggregate
+        # component istances, we need to be careful, because we can't point
+        # more than one g to a given component variable. THis is handles in the
+        # Aggregate class.
         if self._has_helpers:
             self._set_z_size()
             self._Px = sp.dok_matrix(2 * (self.x_size,))
