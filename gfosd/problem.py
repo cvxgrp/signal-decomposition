@@ -80,7 +80,7 @@ class Problem():
         }
         return out
 
-    def decompose(self, solver='qss', data=None, **kwargs):
+    def decompose(self, solver='qss', data=None, make_feasible=True, **kwargs):
         if data is None:
             data = self.make_graph_form()
         if solver.lower() == 'qss':
@@ -89,7 +89,7 @@ class Problem():
         else:
             result = self._solve_cvx(data, solver, **kwargs)
         self.retrieve_result(result)
-        if solver.lower() == 'qss':
+        if solver.lower() == 'qss' and make_feasible:
             self.make_feasible_qss()
 
     def _solve_qss(self, data, **solver_kwargs):

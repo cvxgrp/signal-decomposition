@@ -26,14 +26,9 @@ class Basis(GraphComponent):
     def _set_z_size(self):
         self._z_size = self._basis.shape[1]
 
-    def _make_A(self):
-        self._A = sp.eye(self._basis.shape[0])
-
     def _make_B(self):
+        # if self._basis.shape[0] !=
         self._B = self._basis * -1
-
-    def _make_c(self):
-        self._c = np.zeros(self._B.shape[0])
 
     def _make_g(self, size):
         if (self._penalty is None) or (self._penalty == 'sum_square'):
@@ -52,7 +47,7 @@ class Basis(GraphComponent):
         return P
 
 class Periodic(Basis):
-    def __init__(self, period, T, *args, **kwargs):
+    def __init__(self, period, *args, **kwargs):
         self._period = period
         T = int(T)
         num_periods = int(np.ceil(T / period))
