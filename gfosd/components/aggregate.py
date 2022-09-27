@@ -67,12 +67,13 @@ class Aggregate(GraphComponent):
             pointer = 0
             for d in component._gz:
                 if isinstance(d, dict):
-                    z_len = np.diff(d['range'])[0]
+                    z_start, z_end = d['range']
                     new_d = d.copy()
-                    new_d['range'] = (breakpoints[ix] + pointer,
-                                      breakpoints[ix] + z_len + pointer)
+                    new_d['range'] = (breakpoints[ix] + z_start,
+                                      breakpoints[ix] + z_end)
                     gz.append(new_d)
-                    pointer += z_len
+                else:
+                    pointer += component._z_size
         return gz
 
     def _make_A(self):
