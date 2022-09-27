@@ -27,25 +27,12 @@ class Inequality(GraphComponent):
                   'range': (0, size)}]
         elif self._kind == 'max':
             g = [{'g': 'is_neg',
-                  'args': None,
+                  'args': {'shift': self._max},
                   'range': (0, size)}]
         elif self._kind == 'min':
             g = [{'g': 'is_pos',
-                  'args': None,
+                  'args': {'shift': self._min},
                   'range': (0, size)}]
         return g
 
-    def _make_B(self):
-        if self._kind == 'box':
-            self._B = sp.eye(self.z_size)
-        elif self._kind == 'max' or self._kind == 'min':
-            self._B = -1 * sp.eye(self.z_size)
-
-    def _make_c(self):
-        if self._kind == 'box':
-            self._c = np.ones(self.x_size)
-        elif self._kind == 'max':
-            self._c = self._max * np.ones(self.x_size)
-        elif self._kind == 'min':
-            self._c = self._min * np.ones(self.x_size)
 
