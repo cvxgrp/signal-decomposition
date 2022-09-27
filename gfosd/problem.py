@@ -63,13 +63,12 @@ class Problem():
             pointer = 0
             for d in component._gz:
                 if isinstance(d, dict):
-                    z_len = np.diff(d['range'])[0]
+                    z_start, z_end = d['range']
                     # print(z_len)
                     new_d = d.copy()
-                    new_d['range'] = (breakpoints[ix] + pointer,
-                                      breakpoints[ix] + z_len + pointer)
+                    new_d['range'] = (breakpoints[ix] + z_start,
+                                      breakpoints[ix] + z_end)
                     g.append(new_d)
-                    pointer += z_len
         out = {
             'P': P,
             'q': np.zeros(P.shape[0]),  # not currently used
@@ -135,9 +134,11 @@ class Problem():
                 cost += cvx.sum(gfunc['args']['weight'] * cvx.huber(
                     x[gfunc['range'][0]:gfunc['range'][1]], M=M))
             elif gfunc['g'] == 'is_pos':
-                constraints.append(x[gfunc['range'][0]:gfunc['range'][1]] >= 0)
+                constraints.append(x[gfunc['range'][0]:gfunc['range'][1]] >=
+                                   gfunc['args']['shift'])
             elif gfunc['g'] == 'is_neg':
-                constraints.append(x[gfunc['range'][0]:gfunc['range'][1]] <= 0)
+                constraints.append(x[gfunc['range'][0]:gfunc['range'][1]] <=
+                                   gfunc['args']['shift'])
             elif gfunc['g'] == 'is_bound':
                 lb = gfunc['args']['lb']
                 ub = gfunc['args']['ub']
