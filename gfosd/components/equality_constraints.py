@@ -33,7 +33,8 @@ class AverageEqual(GraphComponent):
         self._avg_val = value
         self._period = period
         super().__init__(*args, **kwargs)
-        # always retain helper variable
+        # always retain helper variable, i.e. don't allow the Aggregate class
+        # to try to remove variables.
         self._has_helpers = True
 
     def _set_z_size(self):
