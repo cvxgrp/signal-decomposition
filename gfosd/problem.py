@@ -119,6 +119,8 @@ class Problem():
     def _solve_cvx(self, data, solver, **solver_kwargs):
         if solver.lower() in ['cvx', 'cvxpy']:
             solver = None
+        else:
+            solver = solver.upper()
         x = cvx.Variable(data['P'].shape[0])
         cost = 0.5 * cvx.quad_form(x, data['P'])
         constraints = [data['A'] @ x == data['b']]
@@ -151,7 +153,8 @@ class Problem():
                 return
         objective = cvx.Minimize(cost)
         cvx_prob = cvx.Problem(objective, constraints)
-        cvx_prob.solve(solver=solver.upper(), **solver_kwargs)
+
+        cvx_prob.solve(solver=solver, **solver_kwargs)
         self._cvx_obj = cvx_prob
         self.objective_value = cvx_prob.value
         self._qss_soln = x.value
