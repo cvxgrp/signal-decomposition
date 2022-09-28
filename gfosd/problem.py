@@ -151,7 +151,7 @@ class Problem():
                 return
         objective = cvx.Minimize(cost)
         cvx_prob = cvx.Problem(objective, constraints)
-        cvx_prob.solve(solver=solver, **solver_kwargs)
+        cvx_prob.solve(solver=solver.upper(), **solver_kwargs)
         self._cvx_obj = cvx_prob
         self.objective_value = cvx_prob.value
         self._qss_soln = x.value
