@@ -134,57 +134,6 @@ class GraphComponent(ABC):
     def _make_c(self):
         self._c = np.zeros(self._B.shape[0])
 
-    def _add_constraints(self):
-        if self._vmin is not None:
-            # introduces new internal variable z
-            self._z_size += self.x_size
-            self._P = sp.block_diag([self._P,
-                                        sp.dok_matrix(2 * (self.x_size,))])
-            self._g = np.concatenate([self._g, 2 * np.ones(self.x_size)])
-            self._A = sp.bmat(
-                [[self._A],
-                 [sp.eye(self.x_size)]]
-            )
-            self._B = sp.block_diag([self._B, -sp.eye(self.x_size)])
-            self._c = np.concatenate([self._c,
-                                      self._vmin * np.ones(self.x_size)])
-        if self._vmax is not None:
-            # introduces new internal variable z
-            self._z_size += self.x_size
-            self._P = sp.block_diag([self._P,
-                                        sp.dok_matrix(2 * (self.x_size,))])
-            self._g = np.concatenate([self._g, 2 * np.ones(self.x_size)])
-            self._A = sp.bmat(
-                [[self._A],
-                 [sp.eye(self.x_size)]]
-            )
-            self._B = sp.block_diag([self._B, sp.eye(self.x_size)])
-            self._c = np.concatenate([self._c,
-                                      self._vmax * np.ones(self.x_size)])
-        if self._vavg is not None:
-            # introduces new constraints on x, but no new helper var
-            newline = sp.coo_matrix(
-                (np.ones(self.x_size),
-                 (self.x_size * [1], np.arange(self.x_size)))
-            )
-            self._A = sp.bmat(
-                [[self._A],
-                 [newline]]
-            )
-            self._b = sp.bmat(
-                [[self._A],
-                 [sp.dok_matrix((1, self.z_size))]]
-            )
-            self._c = np.concatenate([self._c, [self._vavg]])
-
-        if self._period is not None:
-            # TODO: implement this
-            pass
-        if self._first_val is not None:
-            # TODO: implement this
-            pass
-
-
 
     @property
     def weight(self):
