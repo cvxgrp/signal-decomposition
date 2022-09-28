@@ -1,6 +1,4 @@
 
-import numpy as np
-import scipy.sparse as sp
 from gfosd.components.base_graph_class import GraphComponent
 
 
