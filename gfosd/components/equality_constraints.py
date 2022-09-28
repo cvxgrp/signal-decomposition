@@ -12,6 +12,7 @@ class FirstValEqual(GraphComponent):
     def _make_A(self):
         super()._make_A()
         super()._make_B()
+        super()._make_c()
         self._A = sp.bmat([
             [self._A.tocsr()[0]],
             [sp.dok_matrix((1, self._A.shape[1]))]
@@ -24,7 +25,6 @@ class FirstValEqual(GraphComponent):
         ])
 
     def _make_c(self):
-        super()._make_c()
         self._c = np.concatenate([np.atleast_1d(self._c[0]),
                                   [self._first_val]])
 
@@ -53,6 +53,7 @@ class AverageEqual(GraphComponent):
         else:
             super()._make_A()
             super()._make_B()
+            super()._make_c()
             self._A = sp.bmat([
                 [self._A],
                 [sp.dok_matrix((1, self._A.shape[1]))]
@@ -85,3 +86,25 @@ class AverageEqual(GraphComponent):
                 sum_len = self._period
             self._c = np.concatenate([np.atleast_1d(self._c),
                                       [sum_len * self._avg_val]])
+
+class NoCurvature(GraphComponent):
+    def __init__(self, *args, **kwargs):
+        super().__init__(diff=2, *args, **kwargs)
+
+    def _make_A(self):
+        super()._make_A()
+        super()._make_B()
+        super()._make_c()
+        self._A = sp.bmat([
+            [self._A],
+            [sp.dok_matrix((self.z_size, self._A.shape[1]))]
+        ])
+
+    def _make_B(self):
+        self._B = sp.bmat([
+            [self._B],
+            [sp.eye(self.z_size)]
+        ])
+
+    def _make_c(self):
+        self._c = np.concatenate([self._c, np.zeros(self.z_size)])
