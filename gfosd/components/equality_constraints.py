@@ -89,7 +89,10 @@ class AverageEqual(GraphComponent):
 
 class NoCurvature(GraphComponent):
     def __init__(self, *args, **kwargs):
-        super().__init__(diff=2, *args, **kwargs)
+        super().__init__(diff=1, *args, **kwargs)
+
+    def _make_P(self, size):
+        return sp.dok_matrix(2 * (size + 1,))
 
     def _make_A(self):
         super()._make_A()
@@ -102,9 +105,12 @@ class NoCurvature(GraphComponent):
 
     def _make_B(self):
         self._B = sp.bmat([
-            [self._B],
-            [sp.eye(self.z_size)]
+            [self._B, sp.dok_matrix((self._B.shape[0], 1))],
+            [sp.eye(self.z_size), sp.coo_matrix(
+                -1 * np.ones(self.z_size).reshape((-1,1))
+            )]
         ])
 
     def _make_c(self):
         self._c = np.concatenate([self._c, np.zeros(self.z_size)])
+        self._z_size += 1
