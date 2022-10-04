@@ -135,6 +135,12 @@ class Problem():
                     M = 1
                 cost += cvx.sum(gfunc['args']['weight'] * cvx.huber(
                     x[gfunc['range'][0]:gfunc['range'][1]], M=M))
+            elif gfunc['g'] == 'quantile':
+                tau = gfunc['args']['tau']
+                cost += gfunc['args']['weight'] * cvx.sum(
+                    0.5 * cvx.abs(x[gfunc['range'][0]:gfunc['range'][1]]) +
+                    (tau - 0.5) * x[gfunc['range'][0]:gfunc['range'][1]]
+                )
             elif gfunc['g'] == 'is_pos':
                 constraints.append(x[gfunc['range'][0]:gfunc['range'][1]] >=
                                    gfunc['args']['shift'])
