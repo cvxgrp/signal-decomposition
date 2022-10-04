@@ -28,6 +28,9 @@ class Problem():
         self._qss_soln = None
         self._qss_obj = None
 
+    def data_preprocessing(self, take_log=False, min_val=0, max_val=1):
+        pass
+
     def make_graph_form(self):
         num_x = self.T * self.p * self.K
         dicts = [c.make_dict() for c in self.components]
@@ -208,14 +211,14 @@ class Problem():
                 ax[ax_ix].set_title(base + '^{}$'.format(k + 1))
                 if X_real is not None:
                     true = X_real[k]
-                    ax[ax_ix].plot(true, label='true', linewidth=1)
+                    ax[ax_ix].plot(f(true), label='true', linewidth=1)
             elif k < K:
                 est = self.decomposition[k]
                 ax[ax_ix].plot(xs, f(est), label=label, linewidth=1)
                 ax[ax_ix].set_title(base + '^{}$'.format(k + 1))
                 if X_real is not None:
                     true = X_real[k]
-                    ax[ax_ix].plot(xs, true, label='true', linewidth=1)
+                    ax[ax_ix].plot(xs, f(true), label='true', linewidth=1)
             else:
                 if not exponentiate:
                     lbl = 'observed, $y$'
@@ -226,7 +229,7 @@ class Problem():
                 ax[ax_ix].plot(xs, f(np.sum(self.decomposition[1:], axis=0)),
                                label='denoised estimate', linewidth=1)
                 if X_real is not None:
-                    ax[ax_ix].plot(xs, np.sum(X_real[1:], axis=0), label='true',
+                    ax[ax_ix].plot(xs, f(np.sum(X_real[1:], axis=0)), label='true',
                                linewidth=1)
                 ax[ax_ix].set_title('Composed signal')
                 ax[ax_ix].legend()
