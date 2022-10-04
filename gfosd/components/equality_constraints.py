@@ -114,3 +114,19 @@ class NoCurvature(GraphComponent):
     def _make_c(self):
         self._c = np.concatenate([self._c, np.zeros(self.z_size)])
         self._z_size += 1
+
+class NoSlope(GraphComponent):
+    def __init__(self, *args, **kwargs):
+        super().__init__(diff=0, *args, **kwargs)
+        self._has_helpers = True
+
+    def _set_z_size(self):
+        self._z_size = 0
+
+    def _make_A(self):
+        T = self._T
+        m1 = sp.eye(m=T - 1, n=T, k=0)
+        m2 = sp.coo_matrix((-1 * np.ones(T-1),
+                            (np.arange(T-1), T-1 * np.ones(T-1))),
+                           shape=(T-1, T))
+        self._A = m1 + m2
