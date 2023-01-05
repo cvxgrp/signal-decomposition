@@ -26,6 +26,7 @@ class GraphComponent(ABC):
     def __init__(self, weight=1, diff=0, **kwargs):
         self._weight = weight
         self._diff = diff
+        self._has_helpers = diff != 0
         self._Px = None
         self._Pz = None
         self._q = None  # not currently used
@@ -37,11 +38,19 @@ class GraphComponent(ABC):
         self._gz = None
         return
 
-    def prepare_attributes(self, T, p=1, helper=False):
+    def prepare_attributes(self, T, p=1):
         self._T = T
         self._p = p
         self._x_size = T * p
-        if self._diff > 0 or helper:
+        # There are two ways to construct the problem data for a class for QSS.
+        # The first way applies the quadratic and separable costs to a helper
+        # variable. The second way applies the costs to the component variable.
+        # Typically, we want to avoid using helper variables if they aren't
+        # necessary (e.g. for x = z relationships). But in the Aggregate
+        # component istances, we need to be careful, because we can't point
+        # more than one g to a given component variable. THis is handles in the
+        # Aggregate class.
+        if self._has_helpers:
             self._set_z_size()
             self._Px = sp.dok_matrix(2 * (self.x_size,))
             self._Pz = self._make_P(self.z_size)
@@ -124,57 +133,6 @@ class GraphComponent(ABC):
 
     def _make_c(self):
         self._c = np.zeros(self._B.shape[0])
-
-    def _add_constraints(self):
-        if self._vmin is not None:
-            # introduces new internal variable z
-            self._z_size += self.x_size
-            self._P = sp.block_diag([self._P,
-                                        sp.dok_matrix(2 * (self.x_size,))])
-            self._g = np.concatenate([self._g, 2 * np.ones(self.x_size)])
-            self._A = sp.bmat(
-                [[self._A],
-                 [sp.eye(self.x_size)]]
-            )
-            self._B = sp.block_diag([self._B, -sp.eye(self.x_size)])
-            self._c = np.concatenate([self._c,
-                                      self._vmin * np.ones(self.x_size)])
-        if self._vmax is not None:
-            # introduces new internal variable z
-            self._z_size += self.x_size
-            self._P = sp.block_diag([self._P,
-                                        sp.dok_matrix(2 * (self.x_size,))])
-            self._g = np.concatenate([self._g, 2 * np.ones(self.x_size)])
-            self._A = sp.bmat(
-                [[self._A],
-                 [sp.eye(self.x_size)]]
-            )
-            self._B = sp.block_diag([self._B, sp.eye(self.x_size)])
-            self._c = np.concatenate([self._c,
-                                      self._vmax * np.ones(self.x_size)])
-        if self._vavg is not None:
-            # introduces new constraints on x, but no new helper var
-            newline = sp.coo_matrix(
-                (np.ones(self.x_size),
-                 (self.x_size * [1], np.arange(self.x_size)))
-            )
-            self._A = sp.bmat(
-                [[self._A],
-                 [newline]]
-            )
-            self._b = sp.bmat(
-                [[self._A],
-                 [sp.dok_matrix((1, self.z_size))]]
-            )
-            self._c = np.concatenate([self._c, [self._vavg]])
-
-        if self._period is not None:
-            # TODO: implement this
-            pass
-        if self._first_val is not None:
-            # TODO: implement this
-            pass
-
 
 
     @property

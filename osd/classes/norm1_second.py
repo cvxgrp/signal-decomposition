@@ -42,6 +42,9 @@ class SparseSecondDiffConvex(Component):
         self._solver = solver
         return
 
+    def make_graph_form(self, T, p):
+        return 
+
     @property
     def is_convex(self):
         return True

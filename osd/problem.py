@@ -216,7 +216,7 @@ class Problem():
 
     def plot_decomposition(self, x_series=None, X_real=None, figsize=(10, 8),
                            label='estimated', exponentiate=False,
-                           skip=None):
+                           skip=None, **kwargs):
         if self.components is None:
             print('No decomposition available.')
             return
@@ -232,7 +232,7 @@ class Problem():
         else:
             nd = 0
         K = len(self.classes)
-        fig, ax = plt.subplots(nrows=K + 1 - nd, sharex=True, figsize=figsize)
+        fig, ax = plt.subplots(nrows=K + 1 - nd, sharex=True, figsize=figsize, **kwargs)
         if x_series is None:
             xs = np.arange(self.components.shape[1])
         else:

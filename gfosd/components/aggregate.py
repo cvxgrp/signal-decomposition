@@ -7,21 +7,33 @@ class Aggregate(GraphComponent):
         self._gf_list = component_list
         weight = 1
         super().__init__(weight=weight, *args, **kwargs)
+        # this class will always use helper variables, so override super
+        self._has_helpers = True
         return
 
     def prepare_attributes(self, T, p=1):
         helper_removed = False
+        # By default, basic components are not instantiated with a helpler
+        # variable, if not required. However, we need to override that for
+        # Aggregates that apply more than one g to the same component, without
+        # linear transforms.
+        g_ix = 0
         for ix, c in enumerate(self._gf_list):
-            if not helper_removed and c._diff == 0:
-                c.prepare_attributes(T, p=p, helper=False)
-                helper_removed = True
+            if helper_removed:
+                c._has_helpers = True
+                g_ix = ix
             else:
-                c.prepare_attributes(T, p=p, helper=True)
+                if not c._has_helpers:
+                    helper_removed = True
+            c.prepare_attributes(T, p=p)
         self._T = T
         self._p = p
         self._x_size = T * p
         self._set_z_size()
-        self._Px = self._gf_list[0]._Px # only first one in list can be nonzero
+        # We can only use one Px from a sub-component in the aggregated data
+        # model. The default is to use the first one, unless a helper variable
+        # was removed, and then we use the Px from that component.
+        self._Px = self._gf_list[g_ix]._Px
         self._Pz = sp.block_diag([
             c._Pz for c in self._gf_list
         ])
@@ -62,12 +74,13 @@ class Aggregate(GraphComponent):
             pointer = 0
             for d in component._gz:
                 if isinstance(d, dict):
-                    z_len = np.diff(d['range'])[0]
+                    z_start, z_end = d['range']
                     new_d = d.copy()
-                    new_d['range'] = (breakpoints[ix] + pointer,
-                                      breakpoints[ix] + z_len + pointer)
+                    new_d['range'] = (breakpoints[ix] + z_start,
+                                      breakpoints[ix] + z_end)
                     gz.append(new_d)
-                    pointer += z_len
+                else:
+                    pointer += component._z_size
         return gz
 
     def _make_A(self):

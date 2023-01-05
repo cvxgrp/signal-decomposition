@@ -30,6 +30,7 @@ class SumHuber(GraphComponent):
         g = [{'g': 'huber',
               'args': {'weight': self.weight, 'M': self._M},
               'range': (0, size)}]
+        return g
 
 class SumQuantile(GraphComponent):
     def __init__(self, tau, *args, **kwargs):
@@ -41,6 +42,7 @@ class SumQuantile(GraphComponent):
         g = [{'g': 'quantile',
               'args': {'weight': self.weight, 'tau': self.tau},
               'range': (0, size)}]
+        return g
 
 class SumCard(GraphComponent):
     def __init__(self, *args, **kwargs):
@@ -48,6 +50,7 @@ class SumCard(GraphComponent):
         return
 
     def _make_g(self, size):
-        g = [{'f': 'card',
+        g = [{'g': 'card',
               'args': {'weight': self.weight},
               'range': (0, size)}]
+        return g
