@@ -97,7 +97,7 @@ class Problem():
 
     def holdout_decompose(self, holdout_fraction=0.1, seed=None,
                           solver='qss', make_feasible=True, **kwargs):
-        use_set = self.mask
+        use_set = self.mask.use_set
         size = self.T * self.p
         if self.p == 1:
             known_ixs = np.arange(size)[use_set]
@@ -118,7 +118,8 @@ class Problem():
         self.decompose(solver=solver, make_feasible=make_feasible, **kwargs)
         residual = (self.data[hold_set]
                     - np.sum(self.decomposition, axis=0)[hold_set])
-        return residual, hold_set
+        self.mask = self.__old_mask
+        return residual, test_ixs
 
     def _solve_qss(self, data, **solver_kwargs):
         solver = qss.QSS(data)
@@ -133,9 +134,10 @@ class Problem():
         qss_data = self.make_graph_form()
         new_solution = np.copy(self._qss_soln)
         new_x1 = np.zeros_like(self.decomposition[0])
-        new_x1[~np.isnan(self.data)] = (
+        use_set = self.mask.use_set
+        new_x1[use_set] = (
                 self.data - np.sum(self.decomposition[1:], axis=0)
-        )[~np.isnan(self.data)]
+        )[use_set]
         new_solution[:len(new_x1)] = new_x1
         self.retrieve_result(new_solution)
         self._qss_soln = new_solution
