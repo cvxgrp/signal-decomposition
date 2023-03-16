@@ -7,7 +7,7 @@ class SumSquare(GraphComponent):
         return
 
     def _make_P(self, size):
-        return self.weight * sp.eye(size)
+        return self.weight * 2 * sp.eye(size)  # note the (1/2) in canonical form!
 
 class SumAbs(GraphComponent):
     def __init__(self, *args, **kwargs):
