@@ -1,0 +1,46 @@
+{% set name = "osd" %}
+
+package:
+  name: "{{ name|lower }}"
+  version: {{ environ.get('VERSION_FROM_GIT_TAG') }}
+
+source:
+  git_url: https://github.com/cvxgrp/signal-decomposition
+
+build:
+  noarch: python
+  number: 0
+  script: "{{ PYTHON }} -m pip install . --ignore-installed -vv "
+
+requirements:
+  host:
+    - pip
+    - python >=3.9
+    - scipy
+    - numpy >=1.20
+    - qdldl-python
+    - cvxpy
+    - matplotlib
+
+  run:
+    - pip
+    - python
+    - scipy
+    - numpy >=1.20
+    - qdldl-python
+    - cvxpy
+    - matplotlib
+
+about:
+  home: https://github.com/cvxgrp/signal-decomposition
+  license: BSD
+  license_family: BSD
+  license_file:
+  summary: QSS Quadratic-Seperable Solver
+  doc_url:
+  dev_url:
+
+extra:
+  recipe-maintainers:
+    - Bennet Myers
+    - Thistleman
