@@ -12,7 +12,7 @@ import cvxpy as cvx
 from itertools import chain
 import abc
 from scipy.optimize import minimize_scalar
-from scikit-learn.model_selection import train_test_split
+from sklearn.model_selection import train_test_split
 from osd.signal_decomp_admm import run_admm
 from osd.signal_decomp_bcd import run_bcd
 from osd.utilities import compose, calc_obj
