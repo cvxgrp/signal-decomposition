@@ -42,7 +42,7 @@ jobs:
               python-version: "3.9"
 
           - name: Install Twine
-            run: sudo pip install twine
+            run: sudo $pythonLocation/bin/python3 -m pip install twine
 
           - name: Create the distribution
             run: |
