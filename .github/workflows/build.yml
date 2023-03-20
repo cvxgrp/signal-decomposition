@@ -25,10 +25,11 @@ jobs:
               sudo $pythonLocation/bin/python3 setup.py sdist bdist_wheel
 
           - name: Push to PyPI
-            run: sudo twine upload -u ${{ secrets.PYPI_USERNAME }} -p ${{ secrets.PYPI_PASSWORD }} dist/*
+            run: sudo $pythonLocation/bin/python3 -m twine upload -u ${{ secrets.PYPI_USERNAME }} -p ${{ secrets.PYPI_PASSWORD }} dist/*
 
     deploy-conda:
         runs-on: ubuntu-latest
+        environment: deployment
 # sets default shell to remove need for source to run the conda shell
         defaults:
           run:
