@@ -2,4 +2,4 @@ scipy
 numpy
 cvxpy
 matplotlib
-sklearn
+scikit-learn

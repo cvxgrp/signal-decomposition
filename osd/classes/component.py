@@ -53,11 +53,6 @@ class Component(ABC):
         assert not hasattr(super(), 'prox_op')
         return NotImplementedError
 
-    @abstractmethod
-    def make_graph_form(self, T, p):
-        assert not hasattr(super(), 'make_graph_form')
-        return NotImplementedError
-
     @property
     def vmin(self):
         return self._vmin
