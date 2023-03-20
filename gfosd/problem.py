@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 import scipy.sparse as sp
 import qss
 import cvxpy as cvx
-from sklearn.model_selection import train_test_split
+from scikit-learn.model_selection import train_test_split
 from osd.masking import Mask
 
 class Problem():
