@@ -27,7 +27,33 @@ class FirstValEqual(GraphComponent):
     def _make_c(self):
         self._c = np.concatenate([np.atleast_1d(self._c[0]),
                                   [self._first_val]])
+        
+class LastValEqual(GraphComponent):
+    def __init__(self, value=0, *args, **kwargs):
+        self._last_val = value
+        super().__init__(*args, **kwargs)
+        # always retain helper variable
+        self._has_helpers = True
 
+    def _make_A(self):
+        super()._make_A()
+        super()._make_B()
+        super()._make_c()
+        self._A = sp.bmat([
+           [self._A.tocsr()[self._A.shape[1]-1]],
+            [sp.dok_matrix((1, self._A.shape[1]))]
+        ])
+
+    def _make_B(self):
+        self._B = sp.bmat([
+           [self._B.tocsr()[self._B.shape[1]-1]],
+            [sp.coo_matrix(([1], ([0], [self._B.shape[1]-1])), shape=(1, self._B.shape[1]))]
+        ])
+
+    def _make_c(self):
+        self._c = np.concatenate([np.atleast_1d(self._c[0]),
+                                  [self._last_val]])
+        
 class AverageEqual(GraphComponent):
     def __init__(self, value=0, period=None, *args, **kwargs):
         self._avg_val = value
