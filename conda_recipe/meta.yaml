@@ -1,4 +1,4 @@
-{% set name = "osd" %}
+{% set name = "sig-decomp" %}
 
 package:
   name: "{{ name|lower }}"
@@ -18,7 +18,7 @@ requirements:
     - python >=3.9
     - scipy
     - numpy >=1.20
-    - qdldl-python
+    - scikit-learn
     - cvxpy
     - matplotlib
 
@@ -27,7 +27,7 @@ requirements:
     - python
     - scipy
     - numpy >=1.20
-    - qdldl-python
+    - scikit-learn
     - cvxpy
     - matplotlib
 
@@ -36,7 +36,7 @@ about:
   license: BSD
   license_family: BSD
   license_file:
-  summary: QSS Quadratic-Seperable Solver
+  summary: Optimzation-based signal decomposition
   doc_url:
   dev_url:
 
