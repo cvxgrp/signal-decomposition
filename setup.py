@@ -18,6 +18,7 @@ setup(
         "pandas",
         "scipy",
         "scikit-learn",
+        "qss"
     ],
     packages=find_packages(),
     classifiers=[
