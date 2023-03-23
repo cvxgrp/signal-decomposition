@@ -3,3 +3,4 @@ numpy
 cvxpy
 matplotlib
 scikit-learn
+qss
