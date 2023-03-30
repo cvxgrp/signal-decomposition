@@ -122,7 +122,13 @@ class Problem():
         return residual, test_ixs
 
     def _solve_qss(self, data, **solver_kwargs):
-        solver = qss.QSS(data)
+        if self._qss_obj is not None and 'warm_start' in solver_kwargs:
+            if solver_kwargs['warm_start']:
+                solver = self._qss_obj
+            else:
+                solver = qss.QSS(data)
+        else:
+            solver = qss.QSS(data)
         objval, soln = solver.solve(**solver_kwargs)
         self._qss_soln = soln
         self.objective_value = objval
