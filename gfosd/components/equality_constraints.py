@@ -40,18 +40,18 @@ class LastValEqual(GraphComponent):
         super()._make_B()
         super()._make_c()
         self._A = sp.bmat([
-           [self._A.tocsr()[self._A.shape[1]-1]],
+           [self._A.tocsr()[-1]],
             [sp.dok_matrix((1, self._A.shape[1]))]
         ])
 
     def _make_B(self):
         self._B = sp.bmat([
-           [self._B.tocsr()[self._B.shape[1]-1]],
+           [self._B.tocsr()[-1]],
             [sp.coo_matrix(([1], ([0], [self._B.shape[1]-1])), shape=(1, self._B.shape[1]))]
         ])
 
     def _make_c(self):
-        self._c = np.concatenate([np.atleast_1d(self._c[0]),
+        self._c = np.concatenate([np.atleast_1d(self._c[-1]),
                                   [self._last_val]])
         
 class AverageEqual(GraphComponent):
