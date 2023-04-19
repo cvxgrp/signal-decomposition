@@ -19,6 +19,7 @@ class SumSquareReference(GraphComponent):
 
     def __init__(self, vec, *args, **kwargs):
         self._vec = vec
+        # some new line of code!
         super().__init__(*args, **kwargs)
 
     def _make_P(self, size):
