@@ -2,7 +2,8 @@ from gfosd.components.sums import (SumSquare,
                                    SumAbs,
                                    SumHuber,
                                    SumQuantile,
-                                   SumCard)
+                                   SumCard,
+                                   SumSquareReference)
 from gfosd.components.inequality_constraints import Inequality
 from gfosd.components.basis_constraints import Basis, Periodic
 from gfosd.components.finite_set import FiniteSet, Boolean

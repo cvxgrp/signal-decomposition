@@ -1,5 +1,7 @@
+import numpy as np
 import scipy.sparse as sp
 from gfosd.components.base_graph_class import GraphComponent
+
 
 class SumSquare(GraphComponent):
     def __init__(self, *args, **kwargs):
@@ -8,6 +10,26 @@ class SumSquare(GraphComponent):
 
     def _make_P(self, size):
         return self.weight * 2 * sp.eye(size)  # note the (1/2) in canonical form!
+
+
+class SumSquareReference(GraphComponent):
+    """
+    phi(x;v) = || x - v ||_2^2 = ||x||_2^2 -2v^Tx + ||v||_2^2
+    """
+
+    def __init__(self, vec, *args, **kwargs):
+        self._vec = vec
+        super().__init__(*args, **kwargs)
+
+    def _make_P(self, size):
+        return self.weight * 2 * sp.eye(size)  # note the (1/2) in canonical form!
+
+    def _make_q(self):
+        self._q = (-2) * self._vec
+
+    def _make_r(self):
+        self._r = np.sum(np.square(self._vec))
+
 
 class SumAbs(GraphComponent):
     def __init__(self, *args, **kwargs):
@@ -19,6 +41,7 @@ class SumAbs(GraphComponent):
               'args': {'weight': self.weight},
               'range': (0, size)}]
         return g
+
 
 class SumHuber(GraphComponent):
     def __init__(self, M=1, *args, **kwargs):
@@ -32,6 +55,7 @@ class SumHuber(GraphComponent):
               'range': (0, size)}]
         return g
 
+
 class SumQuantile(GraphComponent):
     def __init__(self, tau, *args, **kwargs):
         self.tau = tau
@@ -43,6 +67,7 @@ class SumQuantile(GraphComponent):
               'args': {'weight': self.weight, 'tau': self.tau},
               'range': (0, size)}]
         return g
+
 
 class SumCard(GraphComponent):
     def __init__(self, *args, **kwargs):
