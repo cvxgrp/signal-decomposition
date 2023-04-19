@@ -60,3 +60,4 @@ class Periodic(Basis):
         self._period = period
         M = sp.eye(period)
         super().__init__(M, *args, **kwargs)
+#I will need to add a function to make the basis matrix for the periodic case.
