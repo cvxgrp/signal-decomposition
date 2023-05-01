@@ -37,7 +37,10 @@ class Aggregate(GraphComponent):
         self._Pz = sp.block_diag([
             c._Pz for c in self._gf_list
         ])
-        self._make_q()
+        # same logic as above but for q
+        qx = self._gf_list[g_ix]._q[:self._gf_list[g_ix].x_size]
+        qz = np.concatenate([c._q[self._gf_list[g_ix].x_size:] for c in self._gf_list])
+        self._q = np.concatenate([qx, qz])
         self._make_r()
         self._gx = self._make_gx()
         self._gz = self._make_gz()
@@ -52,6 +55,9 @@ class Aggregate(GraphComponent):
         self._Pz = sp.block_diag([
             c._Pz for c in self._gf_list
         ])
+
+    def _make_r(self):
+        self._r = np.sum([c._r for c in self._gf_list])
 
     def _make_gx(self):
         gx = []
