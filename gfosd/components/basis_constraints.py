@@ -19,7 +19,12 @@ from gfosd.components.base_graph_class import GraphComponent
 class Basis(GraphComponent):
     def __init__(self, basis, penalty=None, *args, **kwargs):
         self._basis = basis
+        # penalty can be None, an atom name (e.g. 'sum_square' or 'abs'), or PSD matrix (2D numpy array)
         self._penalty = penalty
+        if isinstance(penalty, np.ndarray):
+            self._ndim = penalty.ndim
+        else:
+            self._ndim = None
         super().__init__(*args, **kwargs)
         self._has_helpers = True
 
@@ -40,19 +45,23 @@ class Basis(GraphComponent):
         self._B = self._basis * -1
 
     def _make_g(self, size):
-        if (self._penalty is None) or (self._penalty == 'sum_square'):
+        if (self._penalty is None) or (self._penalty == 'sum_square') or (self._ndim is not None):
             g = []
         else:
+            # typically 'abs', 'huber', or 'quantile'
             g = [{'g': self._penalty,
                          'args': {'weight': self.weight},
                          'range': (0, size)}]
         return g
 
     def _make_P(self, size):
-        if (self._penalty is None) or (self._penalty != 'sum_square'):
-            P = sp.dok_matrix(2 * (size,))
-        else:
+        if self._penalty == 'sum_square':
             P = self.weight * sp.eye(size)
+        elif self._ndim is not None:
+            P = sp.dia_matrix(self._penalty)
+            P = P.power(2)
+        else:
+            P = sp.dok_matrix(2 * (size,))
         return P
 
 class Periodic(Basis):
