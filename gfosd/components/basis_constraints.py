@@ -22,7 +22,8 @@ class Basis(GraphComponent):
         # penalty can be None, an atom name (e.g. 'sum_square' or 'abs'), or PSD matrix (2D numpy array)
         self._penalty = penalty
         if isinstance(penalty, np.ndarray):
-            self._ndim = penalty.ndim
+            self._penalty = 'matrix'
+            self._pmat = penalty
         else:
             self._ndim = None
         super().__init__(*args, **kwargs)
@@ -45,7 +46,7 @@ class Basis(GraphComponent):
         self._B = self._basis * -1
 
     def _make_g(self, size):
-        if (self._penalty is None) or (self._penalty == 'sum_square') or (self._ndim is not None):
+        if (self._penalty is None) or (self._penalty == 'sum_square') or (self._penalty == 'matrix'):
             g = []
         else:
             # typically 'abs', 'huber', or 'quantile'
@@ -55,11 +56,11 @@ class Basis(GraphComponent):
         return g
 
     def _make_P(self, size):
-        if self._penalty == 'sum_square':
-            P = self.weight * sp.eye(size)
-        elif self._ndim is not None:
-            P = sp.dia_matrix(self._penalty)
+        if self._penalty == 'matrix':
+            P = sp.dia_matrix(self._pmat)
             P = P.power(2)
+        elif np.all(self._penalty == 'sum_square'):
+            P = self.weight * sp.eye(size)
         else:
             P = sp.dok_matrix(2 * (size,))
         return P
