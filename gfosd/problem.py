@@ -196,7 +196,15 @@ class Problem():
                 return
         objective = cvx.Minimize(cost)
         cvx_prob = cvx.Problem(objective, constraints)
-
+        if solver == "CLARABEL":
+            if "eps_rel" in solver_kwargs.keys():
+                er = solver_kwargs["eps_rel"]
+                del solver_kwargs["eps_rel"]
+                solver_kwargs["tol_gap_rel"] = er
+            if "eps_abs" in solver_kwargs.keys():
+                ea = solver_kwargs["eps_abs"]
+                del solver_kwargs["eps_abs"]
+                solver_kwargs["tol_gap_abs"] = ea
         cvx_prob.solve(solver=solver, **solver_kwargs)
         self._cvx_obj = cvx_prob
         self.objective_value = cvx_prob.value
