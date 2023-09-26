@@ -4,3 +4,4 @@ cvxpy
 matplotlib
 scikit-learn
 qss
+clarabel
