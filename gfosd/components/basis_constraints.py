@@ -21,7 +21,7 @@ class Basis(GraphComponent):
         self._basis = basis
         # penalty can be None, an atom name (e.g. 'sum_square' or 'abs'), or PSD matrix (2D numpy array)
         self._penalty = penalty
-        if isinstance(penalty, np.ndarray):
+        if isinstance(penalty, np.ndarray) or isinstance(penalty, sp.spmatrix):
             self._penalty = 'matrix'
             self._pmat = penalty
         else:
