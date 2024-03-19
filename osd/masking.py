@@ -11,18 +11,19 @@ import numpy as np
 
 class Mask():
     def __init__(self, use_set):
-        if len(use_set.shape) == 1:
+        us = np.atleast_1d(use_set)
+        if len(us.shape) == 1:
             p = 1
-            T = len(use_set)
+            T = len(us)
         else:
-            T, p, = use_set.shape
-        self.use_set = use_set
+            T, p, = us.shape
+        self.use_set = us
         self.T = T
         self.p = p
-        self.q = np.sum(use_set)
-        self.M = make_mask_matrix(use_set)
-        self.M_star = make_inverse_mask_matrix(use_set)
-        self.MstM = make_masked_identity_matrix(use_set)
+        self.q = np.sum(us)
+        self.M = make_mask_matrix(us)
+        self.M_star = make_inverse_mask_matrix(us)
+        self.MstM = make_masked_identity_matrix(us)
 
     def mask(self, v):
         if self.p == 1:

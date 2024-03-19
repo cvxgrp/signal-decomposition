@@ -38,6 +38,8 @@ class Problem():
         Px = sp.block_diag([d['Px'] for d in dicts])
         Pz = sp.block_diag([d['Pz'] for d in dicts])
         P = sp.block_diag([Px, Pz])
+        q = np.concatenate([d['q'] for d in dicts])  # not currently used
+        r = np.sum([d['r'] for d in dicts])
         Al = sp.block_diag([d['A'] for d in dicts])
         Ar = sp.block_diag([d['B'] for d in dicts])
         A = sp.bmat([[Al, Ar]])
@@ -75,8 +77,8 @@ class Problem():
                     g.append(new_d)
         out = {
             'P': P,
-            'q': np.zeros(P.shape[0]),  # not currently used
-            'r': 0,                     # not currently used
+            'q': q,
+            'r': r,                     # not currently used
             'A': A,
             'b': b,
             'g': g

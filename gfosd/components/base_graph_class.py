@@ -94,10 +94,10 @@ class GraphComponent(ABC):
         return sp.dok_matrix(2 * (size,))
 
     def _make_q(self):
-        self._q = None
+        self._q = np.zeros(self.x_size + self.z_size)
 
     def _make_r(self):
-        self._r = None
+        self._r = 0
 
     def _make_g(self, size):
         return []
