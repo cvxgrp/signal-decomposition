@@ -53,6 +53,34 @@ class LastValEqual(GraphComponent):
     def _make_c(self):
         self._c = np.concatenate([np.atleast_1d(self._c[-1]),
                                   [self._last_val]])
+
+
+class ValsEqual(GraphComponent):
+    def __init__(self, indices=0, value=0, *args, **kwargs):
+        self.indices = np.atleast_1d(indices)
+        self._val = value
+        super().__init__(*args, **kwargs)
+        # always retain helper variable
+        self._has_helpers = True
+
+    def _make_A(self):
+        super()._make_A()
+        super()._make_B()
+        super()._make_c()
+        self._A = sp.bmat([
+           [self._A.tocsr()[-1]],
+            [sp.dok_matrix((len(self.indices), self._A.shape[1]))]
+        ])
+
+    def _make_B(self):
+        self._B = sp.bmat([
+            [self._B.tocsr()[-1]], #XXXXX got to here! need to update this matrix generating function to identify all indices that are to be set equal
+            [sp.coo_matrix(([1], ([0], [self._B.shape[1]-1])), shape=(len(self.indices), self._B.shape[1]))]
+        ])
+
+    def _make_c(self):
+        self._c = np.concatenate([np.atleast_1d(self._c[-1]),
+                                  [self.val] * len(self.indices)])
         
 class AverageEqual(GraphComponent):
     def __init__(self, value=0, period=None, *args, **kwargs):
