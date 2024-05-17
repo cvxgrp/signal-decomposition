@@ -1,7 +1,9 @@
 # OSD: Optimization(-based) Signal Decomposition
 _Modeling language for finding signal decompositions_
 
-This software provides a modeling language for describing and solving signal decomposition problems. This framework is described in detail in an acompanying [monograph](https://web.stanford.edu/~boyd/papers/sig_decomp_mprox.html). Examples are available in the [notebooks](notebooks/) directory.
+This software provides a modeling language for describing and solving signal decomposition problems. This framework is described in detail in an acompanying [monograph](https://web.stanford.edu/~boyd/papers/sig_decomp_mprox.html), and examples are available in the [notebooks](notebooks/) directory.
+
+New users are encouraged to try out our _no-code, no-math_ introduction to signal decomposition, available here: http://signal-decomp-tutorial.org/
 
 ## Brief overview
 
