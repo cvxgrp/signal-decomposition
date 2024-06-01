@@ -77,8 +77,8 @@ class Problem():
                     g.append(new_d)
         out = {
             'P': P,
-            'q': q,
-            'r': r,                     # not currently used
+            'q': np.zeros(P.shape[0]),
+            'r': 0,                     # not currently used
             'A': A,
             'b': b,
             'g': g

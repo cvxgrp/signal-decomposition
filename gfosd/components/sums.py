@@ -52,9 +52,16 @@ class SumSquareReference(GraphComponent):
 
 
 class SumAbs(GraphComponent):
-    def __init__(self, *args, **kwargs):
+    def __init__(self, weighting_mat=None, *args, **kwargs):
+        self.weighting_mat = weighting_mat
         super().__init__(*args, **kwargs)
         return
+
+    def _make_B(self):
+        if self.weighting_mat is None:
+            self._B = sp.eye(self._A.shape[0], self.z_size) * -1
+        else:
+            self._B = self.weighting_mat
 
     def _make_g(self, size):
         g = [{'g': 'abs',
