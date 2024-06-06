@@ -27,6 +27,7 @@ requirements:
     - matplotlib
     - qss
     - clarabel
+    - pandas
 
 test:
   imports:
