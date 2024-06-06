@@ -50,4 +50,3 @@ include = ["gfosd*",  "osd*"]
 [project.urls]
 Homepage = "https://github.com/cvxgrp/signal-decomposition"
 "Bug Tracker" = "https://github.com/cvxgrp/signal-decomposition/issues"
-Discussions = "https://github.com/cvxgrp/signal-decomposition/discussions"
