@@ -1,56 +1,55 @@
 name: Main Test
-on:
-    pull_request:
-    push:
-        branches:
-            - master
-        tags:
-          - '*'
+
+on: [push]
 jobs:
     run-tests:
         runs-on: ubuntu-latest
+        environment: test
+        strategy:
+          fail-fast: false
+          matrix:
+            python-version: [ "3.10", "3.11", "3.12" ]
         steps:
           - name: Checkout Repository
-            uses: actions/checkout@v3
+            uses: actions/checkout@v4
 
           - name: Install Python
-            uses: actions/setup-python@v3
+            uses: actions/setup-python@v5
             with:
-              python-version: '3.9'
+              python-version: ${{ matrix.python-version }}
 
-          - name: Install Dependencies
-            run: | 
-              sudo $pythonLocation/bin/python3 -m pip install -r requirements.txt
-              sudo $pythonLocation/bin/python3 -m pip install pytest
-              sudo $pythonLocation/bin/python3 -m pip install -e .
-
-# Current unit test is not consistent. Occasionally fails despite usually passing. Needs to be fixed.
-          - name: Run Unit Tests
+          - name: Install Python Dependencies
             run: |
-              $pythonLocation/bin/python3 -m pytest --import-mode=append tests/
+              curl -LsSf https://astral.sh/uv/install.sh | sh
+              uv pip install --system --break-system-packages -r requirements.txt
+              uv pip install --system --break-system-packages pytest pytest-cov pytest-github-report pytest-github-actions-annotate-failures
+
+          - name: Run Unit Tests
+            env:
+              pytest_github_report: true
+              pytest_verbosity: 2
+            run: pytest -v --cov=src --cov-report=xml --cov-report=term-missing --color=yes tests/
 
     test-build-pypi:
-        needs: run-tests
         runs-on: ubuntu-latest
         steps:
           - name: Checkout Repository
-            uses: actions/checkout@v3
+            uses: actions/checkout@v4
 
           - name: Install Python
-            uses: actions/setup-python@v3
+            uses: actions/setup-python@v5
             with:
               python-version: "3.9"
 
-          - name: Install Twine
-            run: sudo $pythonLocation/bin/python3 -m pip install twine wheel
+          - name: Install Twine and Build
+            run: sudo pip install twine build
 
           - name: Create the distribution
             run: |
               git fetch --prune --unshallow --tags
-              sudo $pythonLocation/bin/python3 setup.py sdist bdist_wheel
+              sudo python3 -m build
 
     test-build-conda:
-        needs: run-tests
         runs-on: ubuntu-latest
 # sets default shell to remove need for source to run the conda shell
         defaults:
@@ -58,28 +57,28 @@ jobs:
             shell: bash -l {0}
         steps:
           - name: Checkout Repository
-            uses: actions/checkout@v3
+            uses: actions/checkout@v4
 
           - name: Install Python
-            uses: actions/setup-python@v3
+            uses: actions/setup-python@v5
             with:
               python-version: "3.9"
 
           - name: Install Miniconda
-            uses: conda-incubator/setup-miniconda@v2
+            uses: conda-incubator/setup-miniconda@v3
             with:
               auto-activate-base: true
               activate-environment: ""
               miniconda-version: "latest"
 
-          - name: Install the Mamba Dependencies
-            run: | 
+          - name: Install the Conda Dependencies
+            run: |
               conda config --set always_yes yes --set auto_update_conda false
               conda update conda
-              conda install mamba -n base -c conda-forge
               conda install -n base conda-libmamba-solver
-              mamba install python=3.9 "conda-build=3.21" colorama pip ruamel ruamel.yaml rich mamba jsonschema -c conda-forge
-              $pythonLocation/bin/python3 -m pip install -e .
+              conda install python=3.9 conda-build colorama pip ruamel ruamel.yaml rich jsonschema -c conda-forge
+              git fetch --prune --unshallow --tags
+              pip install -e .
 
 
 # run install twice due to client-size to ensure all files downloaded
@@ -87,10 +86,10 @@ jobs:
 # git tags MUST be fetched otherwise output will be blank
 # bash variables cannot be used in github actions, must use actions specific syntax and methods
           - name: Build the Anaconda Package
-            id: mambabuild
+            id: condabuild
             run: |
-              mamba install anaconda-client
-              conda config --set anaconda_upload no
-              git fetch --prune --unshallow --tags
-              VERSION_FROM_GIT_TAG=$(git tag --list "v*[0-9]" --sort=version:refname | tail -1 | cut -c 2-) conda build . -c conda-forge -c stanfordcvxgrp --numpy 1.16.4
-              echo '::set-output name=gitversion::$(git tag --list "v*[0-9]" --sort=version:refname | tail -1 | cut -c 2-)'
+              conda install anaconda-client
+              conda clean --all
+              conda config --set anaconda_upload no --set solver libmamba
+              VERSION_FROM_GIT_TAG=$(git tag --list "v*[0-9]" --sort=version:refname | tail -1 | cut -c 2-)test conda build . -c conda-forge -c stanfordcvxgrp
+              echo "gitversion=$(git tag --list "v*[0-9]" --sort=version:refname | tail -1 | cut -c 2-)" >> $GITHUB_OUTPUT
