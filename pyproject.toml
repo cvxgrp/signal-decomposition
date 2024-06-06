@@ -22,7 +22,8 @@ dependencies = [
     "numpy",
     "scipy",
     "scikit-learn",
-    "qss"
+    "qss",
+    "pandas" # may want to remove once osd is deprecated
 ]
 
 classifiers = [
