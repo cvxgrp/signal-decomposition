@@ -5,7 +5,7 @@ package:
   version: {{ environ.get('VERSION_FROM_GIT_TAG') }}
 
 source:
-  git_url: https://github.com/cvxgrp/signal-decomposition
+  path: .. # checked out repo instead of main repo branch
 
 build:
   noarch: python
@@ -15,32 +15,37 @@ build:
 requirements:
   host:
     - pip
-    - python >=3.9
-    - scipy
-    - numpy >=1.20
-    - scikit-learn
-    - cvxpy
-    - matplotlib
+    - python >=3.6
 
   run:
     - pip
     - python
     - scipy
-    - numpy >=1.20
+    - numpy
     - scikit-learn
     - cvxpy
     - matplotlib
+    - qss
+    - clarabel
+    - pandas
+
+test:
+  imports:
+    - gfosd
+  commands:
+    - pip check
+  requires:
+    - pip
 
 about:
   home: https://github.com/cvxgrp/signal-decomposition
-  license: BSD
+  license: BSD-3-Clause
+  license_file: LICENSE
   license_family: BSD
-  license_file:
-  summary: Optimzation-based signal decomposition
-  doc_url:
-  dev_url:
+  summary: Optimization-based signal decomposition
 
 extra:
   recipe-maintainers:
-    - Bennet Myers
-    - Thistleman
+    - bmeyers
+    - thistleman
+    - pluflou
