@@ -11,10 +11,11 @@ that is avaible in the menu of g functions.
 
 """
 
-
 import numpy as np
 import scipy.sparse as sp
 from gfosd.components.base_graph_class import GraphComponent
+from gfosd.components.utilities import make_basis_matrix, make_regularization_matrix
+
 
 class Basis(GraphComponent):
     def __init__(self, basis, penalty=None, *args, **kwargs):
@@ -51,8 +52,8 @@ class Basis(GraphComponent):
         else:
             # typically 'abs', 'huber', or 'quantile'
             g = [{'g': self._penalty,
-                         'args': {'weight': self.weight},
-                         'range': (0, size)}]
+                  'args': {'weight': self.weight},
+                  'range': (0, size)}]
         return g
 
     def _make_P(self, size):
@@ -65,8 +66,32 @@ class Basis(GraphComponent):
             P = sp.dok_matrix(2 * (size,))
         return P
 
+
 class Periodic(Basis):
     def __init__(self, period, *args, **kwargs):
         self._period = period
         M = sp.eye(period)
         super().__init__(M, *args, **kwargs)
+
+
+class Fourier(Basis):
+    def __init__(self, num_harmonics, length, periods, standing_wave=False, trend=False, max_cross_k=None,
+                 custom_basis=None, weight=1, **kwargs):
+        _B = make_basis_matrix(
+            num_harmonics,
+            length,
+            periods,
+            standing_wave,
+            trend,
+            max_cross_k,
+            custom_basis)
+        _D = make_regularization_matrix(
+            num_harmonics,
+            weight,
+            periods,
+            standing_wave,
+            trend,
+            max_cross_k,
+            custom_basis
+        )
+        super().__init__(basis=_B, penalty=_D, weight=weight, **kwargs)
