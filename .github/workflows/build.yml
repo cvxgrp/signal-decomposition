@@ -77,4 +77,4 @@ jobs:
           - name: Upload the Anaconda Package
             id: condaload
             run: |
-              anaconda upload -u stanfordcvxgrp  /usr/share/miniconda3/conda-bld/noarch/sig-decomp-${{ steps.mambabuild.outputs.gitversion }}-*.tar.bz2
+              anaconda upload -u stanfordcvxgrp  /usr/share/miniconda3/conda-bld/noarch/sig-decomp-${{ steps.condabuild.outputs.gitversion }}-*.tar.bz2
