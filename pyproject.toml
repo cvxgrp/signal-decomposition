@@ -1,5 +1,5 @@
 [build-system]
-requires = ["setuptools>=64.0", "setuptools-scm[toml]"]
+requires = ["setuptools>=75.0", "setuptools-scm[toml]"]
 build-backend = "setuptools.build_meta"
 
 [project]
@@ -14,7 +14,7 @@ maintainers = [
   { name = "Sara Miskovich", email = "smiskov@slac.stanford.edu" },
 ]
 keywords = ["convex optimization", "optimization"]
-requires-python = ">=3.6"
+requires-python = ">=3.9"
 
 dependencies = [
     "cvxpy",
@@ -30,9 +30,6 @@ classifiers = [
     "Development Status :: 4 - Beta",
     "License :: OSI Approved :: BSD License",
     "Programming Language :: Python :: 3 :: Only",
-    "Programming Language :: Python :: 3.6",
-    "Programming Language :: Python :: 3.7",
-    "Programming Language :: Python :: 3.8",
     "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
