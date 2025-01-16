@@ -107,7 +107,7 @@ class SparseSecondDiffConvex(Component):
         problem = self._prox_prob
         ic = self.internal_scale
         if self._last_set is not None:
-            set_change = ~np.alltrue(use_set == self._last_set)
+            set_change = ~np.all(use_set == self._last_set)
         else:
             set_change = True
         if problem is None or set_change:

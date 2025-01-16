@@ -39,7 +39,7 @@ class ConstantChunks(Component):
         super().__init__(**kwargs)
         self.length=length
         if use_set is not None and len(use_set.shape) > 1:
-            self.use_set = np.alltrue(use_set, axis=1)
+            self.use_set = np.all(use_set, axis=1)
         else:
             self.use_set = use_set
         self._internal_constraints = partial(make_constraints,

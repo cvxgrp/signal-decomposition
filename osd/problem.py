@@ -70,7 +70,7 @@ class Problem():
 
     @property
     def is_convex(self):
-        return np.alltrue([c.is_convex for c in self.classes])
+        return np.all([c.is_convex for c in self.classes])
 
     def decompose(self, use_set=None, rho=None, rho0_scale=None, how=None,
                   num_iter=1e3, verbose=True, reset=False,
