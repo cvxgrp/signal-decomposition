@@ -23,4 +23,6 @@ The `K` components are characterized by cost functions that encode the loss of o
 
 # Installation
 
-We do not yet have a package released for this code, so for now, please clone the repository and set up a virtual environment with the packages listed in the [requirements file](requirements.txt).
+You can pip install this package (`pip install sig-decomp`) or install from conda-forge (`conda install conda-forge::sig-decomp`).
+
+For a dev environment, please clone the repository and install within a fresh environment using `pip install -e .`.

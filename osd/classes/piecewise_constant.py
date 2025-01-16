@@ -109,7 +109,7 @@ def dp_seg(x, d, c):
                            else np.nan
                            for b_left in range(b_right)]
                 e[b_right, :b_right] = e_entry
-        slct = ~np.alltrue(np.isnan(e), axis=-1)
+        slct = ~np.all(np.isnan(e), axis=-1)
         cost[k, slct] = np.nanmin(e[slct, :], axis=-1)
         z[k, slct] = np.nanargmin(e[slct, :], axis=-1) + 1 # the optimal b_right
     # Backtracking
