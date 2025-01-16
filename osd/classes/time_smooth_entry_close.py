@@ -242,7 +242,7 @@ class TimeSmoothPeriodicEntryClose(TimeSmoothEntryClose):
             use_bar = np.any(use_bar, axis=0)
         else:
             use_bar = None
-        if np.alltrue(scales == 1):
+        if np.all(scales == 1):
             scales = None
         out_bar = super().prox_op(v_bar, weight, rho, use_set=use_bar,
                                   prox_weights=scales)

@@ -28,7 +28,7 @@ class OneJump(Component):
         self.down_only = down_only
         self.up_only = up_only
         if use_set is not None and len(use_set.shape) > 1:
-            self.use_set = np.alltrue(use_set, axis=1)
+            self.use_set = np.all(use_set, axis=1)
         else:
             self.use_set = use_set
         return
